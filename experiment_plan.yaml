@@ -1,25 +1,37 @@
+# Experiment plan — goldfinger (GRAND SLAM)
+
+# Declarative experimental conditions consumed by the analysis and manuscript
+# variable pipeline. Overlay is a validation input only.
+
+mission:
+  codename: "GRAND SLAM"
+  film: "Goldfinger (1964)"
+
 conditions:
-  - name: conservative_step
-    role: reference
-    description: "Stable gradient-descent step below the spectral bound."
-  - name: near_optimal_step
-    role: proposed
-    description: "Template-recommended step near the stable convergence region."
-  - name: aggressive_step
-    role: variant
-    description: "Stress condition near or above the stability boundary."
-metrics:
-  primary:
-    name: objective_value
-    direction: minimize
-protocol: "Run the deterministic quadratic optimization sweep with identical initialization, seeds, tolerance, and iteration cap across all declared step-size conditions."
+  market:
+    referencing: "fraction of floatable supply removed by the corner"
+    levels: [0.10, 0.20, 0.30, 0.40, 0.50]
+    primary_metric: "fractional price gain at constant elasticity"
+    baseline: "fraction_removed = 0.30, elasticity = 1.25"
+  vault:
+    referencing: "Fort Knox-style layered defense ratings"
+    layers: [perimeter, fence, guard_response, vault_door, combination_lock, gold_storage]
+    primary_metric: "weighted defense-in-depth score and penetration probability"
+    baseline: "reference ratings in vault_security.REFERENCE_RATINGS"
+  laser:
+    referencing: "burn-through time vs material and power"
+    levels: "power sweep [1e3, 2e4] W"
+    primary_metric: "burn-through time for a fixed steel plate"
+    baseline: "power = 5000 W, thickness = 0.05 m"
+
 expected_figures:
-  - fig:convergence_plot
-  - fig:performance_benchmark
-  - fig:step_size_sensitivity
+  - "market_corner_trajectory.png"
+  - "vault_layered_score.png"
+  - "laser_burn_through.png"
+
 expected_tables:
-  - tbl:optimization_results
-baselines:
-  - conservative_step
-ablations:
-  - aggressive_step
+  - "manuscript_variables.json token map"
+
+ablation:
+  - "market: sweep fraction_removed"
+  - "laser: sweep power"

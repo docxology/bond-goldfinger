@@ -1,4 +1,4 @@
-"""Smoke tests for auxiliary pipeline scripts (non-gated)."""
+"""Subprocess smoke tests for the thin GRAND SLAM mission-phase CLIs."""
 
 from __future__ import annotations
 
@@ -6,65 +6,82 @@ import subprocess
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_generate_api_docs_writes_reference() -> None:
-    """generate_api_docs.py is aesthetic-only but should run without error."""
-    script = PROJECT_ROOT / "scripts" / "generate_api_docs.py"
-    result = subprocess.run(
-        [sys.executable, str(script)],
-        cwd=PROJECT_ROOT,
+def _run_script(name: str, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(_PROJECT_ROOT / "scripts" / name), *args],
         capture_output=True,
         text=True,
-        timeout=120,
+        cwd=_PROJECT_ROOT,
         check=False,
     )
-    assert result.returncode == 0, result.stderr or result.stdout
-    api_ref = PROJECT_ROOT / "output" / "docs" / "api_reference.md"
-    assert api_ref.is_file()
-    body = api_ref.read_text(encoding="utf-8")
-    assert "gradient_descent" in body.lower()
 
 
-def test_preflight_script_emits_diagnostics() -> None:
-    """00_preflight.py is aesthetic-only; exit 0 when no render mermaid, exit 1 when chrome absent."""
-    script = PROJECT_ROOT / "scripts" / "00_preflight.py"
-    result = subprocess.run(
-        [sys.executable, str(script)],
-        cwd=PROJECT_ROOT,
+def test_brief_cli() -> None:
+    proc = _run_script("brief.py")
+    assert proc.returncode == 0
+    assert "GRAND SLAM" in proc.stdout
+    assert "corner the gold market" in proc.stdout
+
+
+def test_recon_cli_with_goal() -> None:
+    proc = _run_script("recon.py", "survey the vault")
+    assert proc.returncode == 0
+    assert "survey the vault" in proc.stdout
+    assert "Findings" in proc.stdout
+
+
+def test_plan_cli() -> None:
+    proc = _run_script("plan.py")
+    assert proc.returncode == 0
+    assert "simulate_market_corner" in proc.stdout
+    assert "assess_laser_threat" in proc.stdout
+
+
+def test_execute_cli_reports_metrics() -> None:
+    proc = _run_script("execute.py")
+    assert proc.returncode == 0
+    assert "shocked price $" in proc.stdout
+    assert "vault defense" in proc.stdout
+    assert "laser threat" in proc.stdout
+    assert "provenance" in proc.stdout
+
+
+def test_debrief_cli() -> None:
+    proc = _run_script("debrief.py")
+    assert proc.returncode == 0
+    assert "success=True" in proc.stdout
+    assert "Lessons learned" in proc.stdout
+
+
+def test_generate_manuscript_variables_writes_artifacts(tmp_path: Path) -> None:
+    # Run in a sandbox copy of the tree so we don't touch the real output/.
+    import shutil
+
+    sandbox = tmp_path / "pkg"
+    shutil.copytree(
+        _PROJECT_ROOT,
+        sandbox,
+        ignore=shutil.ignore_patterns(".venv", ".git", "output", "__pycache__"),
+    )
+    proc = subprocess.run(
+        [sys.executable, "scripts/z_generate_manuscript_variables.py"],
         capture_output=True,
         text=True,
-        timeout=120,
+        cwd=sandbox,
         check=False,
     )
-    assert result.returncode in (0, 1), result.stderr or result.stdout
-    combined = f"{result.stdout}\n{result.stderr}".lower()
-    if result.returncode == 1:
-        assert any(token in combined for token in ("preflight", "puppeteer", "mmdc"))
+    assert proc.returncode == 0, proc.stderr
+    data_json = sandbox / "output" / "data" / "manuscript_variables.json"
+    figs = sandbox / "output" / "figures"
+    assert data_json.is_file()
+    assert (figs / "market_corner_trajectory.png").is_file()
+    assert (figs / "vault_layered_score.png").is_file()
+    assert (figs / "laser_burn_through.png").is_file()
+    import json
 
-
-def test_run_api_doc_generation_continues_when_glossary_index_fails(tmp_path: Path) -> None:
-    """Glossary index failure is logged; static api_reference.md still written."""
-    repo_root = PROJECT_ROOT.parent.parent
-    src_path = str(PROJECT_ROOT / "src")
-    for path in (str(repo_root), src_path):
-        if path not in sys.path:
-            sys.path.insert(0, path)
-
-    scripts_dir = str(PROJECT_ROOT / "scripts")
-    if scripts_dir not in sys.path:
-        sys.path.insert(0, scripts_dir)
-    import generate_api_docs as api_docs_mod
-
-    def _fail(_src: str) -> list:
-        raise ValueError("glossary index unavailable")
-
-    project_root = tmp_path
-    (project_root / "src").mkdir()
-    result = api_docs_mod.run_api_doc_generation(project_root, api_index_builder=_fail)
-    assert result is not None
-    api_ref = project_root / "output" / "docs" / "api_reference.md"
-    assert api_ref.is_file()
-    assert result["glossary"] is None
-    assert result["api_reference"] == str(api_ref)
+    payload = json.loads(data_json.read_text(encoding="utf-8"))
+    assert "MARKET_PRICE_GAIN_PCT" in payload
+    assert "VAULT_SCORE" in payload

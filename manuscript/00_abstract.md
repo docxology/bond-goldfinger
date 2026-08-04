@@ -1,11 +1,26 @@
-# Abstract {#sec:abstract}
+# Abstract
 
-This paper presents a convergence study of **fixed-step gradient descent** on a convex quadratic, framed as the computational exemplar of the [Research Project Template](https://github.com/docxology/template). The implementation lives in `projects/working/bond/goldfinger/src/optimizer.py`; experiments and figures are orchestrated by `projects/working/bond/goldfinger/scripts/optimization_analysis.py` and hydrated into the manuscript through `scripts/z_generate_manuscript_variables.py`, so tables and prose track `output/data/optimization_results.csv` after every pipeline run.
+Auric Goldfinger's *Operation Grand Slam* is modelled as a deliberate
+gold-market corner: a supply shock that removes {{MARKET_FRACTION_REMOVED}}% of
+the floatable supply and drives the clearing price from
+${{MARKET_REFERENCE_PRICE}}/oz to a shocked equilibrium of
+${{MARKET_SHOCKED_PRICE}}/oz — a {{MARKET_PRICE_GAIN_PCT}}% appreciation under
+constant-elasticity demand (elasticity {{MARKET_ELASTICITY}}). The GRAND SLAM
+mission software evaluates the counter-threat surface the same way a 
+security analyst would: a Fort Knox-style layered vault defence scores
+{{VAULT_SCORE}} ({{VAULT_VERDICT}} security, {{VAULT_PENETRATION_PCT}}%
+penetration probability given the weakest layer is the
+{{VAULT_WEAKEST}}), and a {{LASER_POWER_W}} W laser cuts a
+{{LASER_THICKNESS_MM}} mm steel plate in {{LASER_BURN_THROUGH_S}} s
+({{LASER_SEVERITY}} threat).
 
-We evaluate {{CONFIG_NUM_STEP_SIZES}} step sizes from $\alpha = {{CONFIG_MIN_STEP_SIZE}}$ to $\alpha = {{CONFIG_MAX_STEP_SIZE}}$, spanning conservative, near-optimal, aggressive, and divergent regimes for a unit Hessian model. The build chain exercises template infrastructure end-to-end: scientific helpers (`infrastructure.scientific.stability`, `infrastructure.scientific.benchmarking`), validation, rendering (`infrastructure/rendering/pdf_renderer.py`), and reporting. Accessibility-oriented plotting defaults (colourblind-safe palette, 300 dpi exports) are centralized in `src/figures/` and `src/analysis/`.
-
-Contributions are **methodological** and **architectural**. On the methods side, we relate empirical iteration counts and error decay to the scalar contraction factor $\rho(\alpha) = |1-\alpha|$ and document cases where runs hit $N_{\max} = {{CONFIG_MAX_ITERATIONS}}$ before meeting the gradient tolerance. On the architecture side, we demonstrate a zero-mock test suite on project `src/` (see [test_optimizer.py](https://github.com/docxology/template/blob/main/projects/working/bond/goldfinger/tests/test_optimizer.py)), automated six-figure analysis, and reproducibility metadata (configuration hash, artifact counts) injected into [@sec:reproducibility].
-
-**Results (this configuration):** {{RESULT_NUM_CONVERGED}} of {{CONFIG_NUM_STEP_SIZES}} grid points report `converged=True` in the CSV; non-convergent rows flag either slow progress at small $\alpha$ under the iteration cap or instability when $|1-\alpha| \geq 1$. The analytical minimizer remains $x^\ast = {{RESULT_OPTIMUM_X}}$ with $f(x^\ast) = {{RESULT_OPTIMUM_F}}$ for the configured $(A,b)$.
-
-**Keywords:** {{CONFIG_KEYWORDS}}
+The cinema's fictional scheme is treated here as a *quantitative modelling
+exercise*: three deterministic, infrastructure-free modules
+(`market_attack`, `vault_security`, `laser_physics`) formalize the economics
+of cornering, the reliability of defence-in-depth, and the physics of laser
+penetration. Each is fully unit-tested on real computation with zero mocking,
+and the results are injected into this manuscript as template variables so no
+metric is hand-authored. The whole package implements the frozen BOND-API
+mission protocol, exposing a `MissionProvider` (film `goldfinger`, codename
+`GRAND SLAM`) that a fleet orchestrator can discover and drive through the
+brief–recon–plan–execute–debrief lifecycle.

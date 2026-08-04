@@ -1,52 +1,57 @@
-#!/usr/bin/env python3
-"""Thin orchestrator: generate and inject manuscript variables.
+#!/usr/bin/env python
+"""GRAND SLAM manuscript variable + figure generation.
 
-Reads experiment config and analysis outputs, writes
-``output/data/manuscript_variables.json``, and substitutes
-``{{TOKEN}}`` markers in manuscript sections into
-``output/manuscript/`` for PDF rendering.
+Computes the ``{{TOKEN}} → value`` map from ``manuscript/config.yaml`` and the
+deterministic domain core, writes it to ``output/data/manuscript_variables.json``,
+renders the three concept figures to ``output/figures/``, and prints a summary.
 
-All computation lives in ``src/manuscript_variables``;
-all injection lives in
-``infrastructure.rendering.manuscript_injection``.
-
-Exit codes:
-    0   variables written and injected successfully
-    1   unexpected error
+Companion gate: ``tests/test_manuscript_variables.py`` asserts every token used
+in the numbered prose sections exists in the generated map.
 """
 
 from __future__ import annotations
 
-import argparse
+import json
 import sys
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_PROJECT_ROOT))
-sys.path.insert(0, str(_PROJECT_ROOT.parents[2]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))  # noqa: E402
+
+from goldfinger.figures import (  # noqa: E402
+    plot_laser_burn_through,
+    plot_market_corner_trajectory,
+    plot_vault_layered_score,
+)
+from goldfinger.manuscript_variables import generate_variables  # noqa: E402
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> int:
-    """CLI entry point."""
-    parser = argparse.ArgumentParser(description="Generate manuscript variables for goldfinger")
-    parser.add_argument(
-        "--allow-draft",
-        action="store_true",
-        help="Allow N/A fallbacks when analysis outputs are missing (non-pipeline draft mode)",
-    )
-    args = parser.parse_args()
+    variables = generate_variables(require_analysis_outputs=False, project_root=_PROJECT_ROOT)
 
-    from infrastructure.rendering.manuscript_injection import write_resolved_manuscript_tree
-    from src.manuscript_variables import generate_variables, save_variables
+    data_dir = _PROJECT_ROOT / "output" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    json_path = data_dir / "manuscript_variables.json"
+    with json_path.open("w", encoding="utf-8") as handle:
+        json.dump(variables, handle, indent=2, sort_keys=True)
 
-    variables = generate_variables(
-        _PROJECT_ROOT,
-        require_analysis_outputs=not args.allow_draft,
+    figures_dir = _PROJECT_ROOT / "output" / "figures"
+    figure_paths = (
+        plot_market_corner_trajectory(figures_dir),
+        plot_vault_layered_score(figures_dir),
+        plot_laser_burn_through(figures_dir),
     )
-    out_path = _PROJECT_ROOT / "output" / "data" / "manuscript_variables.json"
-    save_variables(variables, out_path)
-    write_resolved_manuscript_tree(_PROJECT_ROOT, variables)
-    print(str(out_path))
+
+    print(f"wrote {json_path}")
+    print(
+        f"  - {len(variables)} tokens (sample): "
+        f"MARKET_PRICE_GAIN_PCT={variables['MARKET_PRICE_GAIN_PCT']}%, "
+        f"VAULT_SCORE={variables['VAULT_SCORE']}, "
+        f"LASER_BURN_THROUGH_S={variables['LASER_BURN_THROUGH_S']}s"
+    )
+    for path in figure_paths:
+        print(f"  figure: {path}")
     return 0
 
 

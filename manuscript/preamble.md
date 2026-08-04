@@ -1,73 +1,14 @@
-# LaTeX Preamble
+# Preamble
 
-This file contains LaTeX packages and commands that are automatically injected into the document compilation process.
+This manuscript is rendered from the numbered markdown sections in this
+directory, with `{{VARIABLE}}` token substitution performed by
+`scripts/z_generate_manuscript_variables.py` from
+`src/goldfinger/manuscript_variables.py::generate_variables()`.
 
-> **Infrastructure Note**: This file is parsed by `infrastructure/rendering/latex_utils.py` and combined with the configuration output by `infrastructure/rendering/pdf_renderer.py` before final Pandoc execution to generate the physical PDF holding this text.
+Identity: **{{GOLDFINGER_TITLE}}** · film **{{GOLDFINGER_FILM}}** · codename
+**{{GOLDFINGER_CODENAME}}** · version **{{GOLDFINGER_VERSION}}** ·
+author **{{GOLDFINGER_AUTHOR}}** ({{GOLDFINGER_AFFILIATION}}).
 
-```latex
-% Core mathematics
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{amsfonts}
-\usepackage{amsthm}
-
-% Document layout
-\usepackage{geometry}
-\geometry{margin=0.25in}
-\usepackage{float}
-\usepackage{graphicx}
-
-% Tables
-\usepackage{booktabs}
-\usepackage{longtable}
-\usepackage{array}
-
-% Algorithm typesetting (for pseudocode in §2 Methodology)
-\IfFileExists{algorithm2e.sty}{\usepackage[ruled,vlined,linesnumbered]{algorithm2e}}{}
-
-% Code listings
-\usepackage{listings}
-
-% Typography and formatting
-\usepackage{microtype}
-\usepackage{xcolor}
-\IfFileExists{siunitx.sty}{\usepackage[binary-units]{siunitx}}{}
-
-% Cross-references and citations
-\usepackage{hyperref}
-\hypersetup{
-    colorlinks=true,
-    allcolors=red
-}
-\usepackage[capitalise,noabbrev]{cleveref}
-\usepackage{natbib}
-
-% ── Unicode-capable mono font for code listings ──────────────────────
-% JuliaMono (TeX Live 2026) covers the full math/Greek glyph set used in
-% scientific code blocks; the default lmmono lacks \alpha/\mu/\partial/\nabla.
-%
-% The hardcoded TeX Live 2026 path below is portable to most macOS / Linux
-% TeX Live installs that placed JuliaMono under the default texmf-dist path.
-% If your TeX Live version differs (e.g., 2025, 2027) or your distribution
-% installs fonts elsewhere, comment out the explicit Path = line — fontspec
-% will then search the system font path. If JuliaMono is not installed at
-% all, comment out the whole block; xelatex falls back to lmmono with
-% reduced Unicode coverage but the document still compiles.
-\usepackage{fontspec}
-\setmonofont{JuliaMono-Regular}[
-  Path           = /usr/local/texlive/2026/texmf-dist/fonts/truetype/public/juliamono/,
-  Extension      = .ttf,
-  UprightFont    = *,
-  BoldFont       = JuliaMono-Bold,
-  ItalicFont     = JuliaMono-RegularItalic,
-  BoldItalicFont = JuliaMono-BoldItalic,
-  Scale          = MatchLowercase,
-]
-
-% Math font for unicode-math: Latin Modern Math (TeX Live) has full BMP
-% coverage including U+2223 (\mid), U+226A/226B (\ll/\gg), and the Greek/
-% blackboard letters used in equations. Without an explicit \setmathfont,
-% unicode-math falls back to lmroman text font which lacks several glyphs
-% and emits "Missing character" warnings on every \mid in math mode.
-\setmathfont{latinmodern-math.otf}
-```
+Figures are referenced with Pandoc `{#fig:label}` anchors (see the figure
+lines in `03_results.md`). No numeric result metric is hand-authored: every
+value that can change with the reference intel is injected as a token.

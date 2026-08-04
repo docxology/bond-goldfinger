@@ -1,49 +1,32 @@
-domain: code_research
-display_name: Code Research Exemplar
-required_packages:
-  - numpy
-  - matplotlib
-  - pytest
-preferred_outputs:
-  - pdf
-  - html
-  - docx
-  - epub
-validation_gates:
-  - experiment_method_design
-  - artifact_manifest
-  - evidence_grounding
-  - render_validation
-  - publication_readiness
-figure_types:
-  - convergence_plot
-  - performance_benchmark
-  - sensitivity_analysis
-citation_policy: official_or_scholarly
-source_policy: "Prefer primary project outputs, official package documentation, and scholarly optimization references."
+# Domain profile — goldfinger (GRAND SLAM)
+
+# Advisory declarative metadata for agentic-research controls. Validation
+# inputs only; does not execute autonomous agents.
+
+domain: "Special-agent mission modelling for Goldfinger (1964)"
+
+mission:
+  codename: "GRAND SLAM"
+  provider_module: "goldfinger.mission"
+  protocol: "bond_api.MissionProvider"
+
 review_gates:
-  - experiment_method_design
-  - render_validation
-  - publication_readiness
+  determinism_gate: "fixed seed 2026, no untracked RNG, no wall-clock in persisted results"
+  coverage_gate: "at least 90 percent line and branch on src/goldfinger"
+  mock_gate: "zero mocking, no MagicMock or unittest.mock"
+  lineage_gate: "zero leftover exemplar-lineage placeholder strings"
+
+source_policy:
+  - "pure domain core imports nothing beyond NumPy and stdlib; no infrastructure imports"
+  - "bond_api confined to the goldfinger.mission adapter"
+
 artifact_expectations:
-  - output/data/manuscript_variables.json
-  - output/data/optimization_results.csv
-  - output/figures/convergence_plot.png
-  - output/reports/validation_report.json
-  - output/pdf/template_code_project_combined.pdf
+  - "output/data/manuscript_variables.json with 25 tokens"
+  - "output/figures/market_corner_trajectory.png"
+  - "output/figures/vault_layered_score.png"
+  - "output/figures/laser_burn_through.png"
+
 benchmark_rubric:
-  name: code-research-readiness
-  dimensions:
-    - name: output_validity
-      weight: 1.0
-    - name: reproducibility_bundle
-      weight: 1.0
-    - name: artifact_manifest
-      weight: 1.0
-    - name: evidence_grounding
-      weight: 2.0
-    - name: render_success
-      weight: 1.0
-    - name: publication_readiness
-      weight: 1.0
-llm_prompt_guidance: "Use generated optimization artifacts and manuscript variables as the evidence source; do not invent numeric results."
+  determinism: "repeated runs reproduce identical result tokens"
+  honesty: "all metrics computed, none hand-authored"
+  protocol_conformance: "discoverable by slug, MissionProvider lifecycle satisfied"

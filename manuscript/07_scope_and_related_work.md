@@ -1,24 +1,43 @@
-# Scope, Related Work, and Positioning {#sec:scope}
+# Scope and Related Work
 
-This section situates the exemplar scientifically and states explicit boundaries. The goal is not to compete with monographs on nonlinear programming [@nocedal2006numerical; @bertsekas1999nonlinear], but to show how a minimal, test-backed optimization story fits the template's reproducibility and rendering stack [@peng2011reproducible].
+## Scope
 
-## Classical gradient methods
+This work is a **quantitative modelling exercise** inspired by the *Goldfinger*
+(1964) plot; it is not a physical market or security assessment. Scope
+boundaries:
 
-Smooth unconstrained minimization via first-order updates has a long lineage, from Cauchy's early descent perspective [@cauchy1847methode] to modern treatments of convex problems [@boyd2004convex] and accelerated gradient schemes [@nesterov2013gradient]. Polyak's classical discussion of gradient convergence factors remains relevant when interpreting empirical iteration counts [@polyak1964some]. The present manuscript restricts attention to **fixed-step** gradient descent on a **convex quadratic**, where rates reduce to scalar linear recurrences in the error ([@sec:results], [@eq:scalar_linear_update]).
+- The market model assumes constant-elasticity demand and a single sterile
+  supply shock; it abstracts away bid–ask microstructure, storage costs,
+  competing arbitrageurs, and policy responses. It is deliberately closed-form
+  and deterministic.
+- The vault model treats layers as independent stops with probabilities equal
+  to their ratings; real security is correlated, adaptive, and human, and the
+  ratings themselves are analyst inputs.
+- The laser model is a thermal energy-balance approximation; it neglects
+  plasma shielding, beam divergence over range, radiative losses, and phase
+  change (latent heat), so burn-through times are order-of-magnitude threats,
+  not certified engineering values.
 
-## Adaptive and stochastic extensions
+These limitations are features for a mission-planning sandbox: they keep the
+models auditable and replayable, and they make the numbers honest — each is a
+clearly-stated approximation, not a fabricated precision.
 
-Practical machine-learning optimizers (e.g., Adam [@kingma2014adam]) introduce momentum, adaptive preconditioning, or noise from minibatching. Those methods are **out of scope** for `goldfinger`: the exemplar deliberately keeps the algorithm minimal so that failures (divergent $\alpha$, iteration caps) are interpretable without confounding from stochastic sampling or line-search logic.
+## Related work
 
-## What this project proves about the template
+The models draw on standard, well-understood literatures rather than novel
+theory:
 
-The scientific claims through [@sec:introduction], [@sec:methodology], and [@sec:results] are standard textbook material. The **non-standard** contribution is procedural: configuration in `manuscript/config.yaml` drives `run_convergence_experiment()`, figures, CSV exports, and `RESULT_*` token substitution (`scripts/z_generate_manuscript_variables.py`) so that PDF, HTML, and validation logs refer to the same numbers. That pattern is what downstream projects should copy—whether the domain is optimization, differential equations, or Bayesian workflows.
+- **Market cornering / supply shocks**: the constant-elasticity inverse-demand
+  and tatonnement price-adjustment framework dates to the classical
+  Walrasian adjustment literature; the cornering setting appears in commodity
+  market analyses of hoarding and sterilization.
+- **Defense-in-depth**: layered-security scoring and product-rule penetration
+  probabilities are standard in risk analysis and vault/access-control
+  engineering (sequential-independent-barrier models).
+- **Laser material interaction**: the energy-balance (heat-load) burn-through
+  approximation is the elementary continuous-wave model underlying laser
+  cutting and drilling estimates.
 
-## Explicit limitations
-
-1. **Dimensionality**: Default experiments emphasize $d = 1$ with $A = I$ for transparent plotting; the benchmark figure explores $d > 1$ only with identity Hessians, so no ill-conditioning effects appear.
-2. **Step-size policy**: Only constant $\alpha$ is implemented in `src/optimizer.py`; there is no Wolfe or Armijo backtracking.
-3. **Global optimization**: Convexity is assumed; no basin-hopping or restarts are studied.
-4. **Numerical model**: Double-precision floating point only; no interval or arbitrary-precision analysis.
-
-These limitations are intentional: they narrow the failure surface so that infrastructure concerns—tests, logging, figure registration, and PDF cross-references—remain visible rather than buried under algorithmic complexity.
+The contribution of this package is not new theory but a *disciplined,
+testable, deterministic implementation* of these three concepts as pure
+modules plus a protocol-compliant mission adapter, reproducible end to end.

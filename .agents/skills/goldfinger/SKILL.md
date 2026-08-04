@@ -1,53 +1,42 @@
 ---
 name: goldfinger
-description: Code-centric optimization research exemplar — gradient descent, convergence analysis, automated figures, dashboard, and publication-quality PDF.
-version: 0.1.0
-author: docxology
-license: MIT
-tags: [exemplar, code, optimization, thin-orchestrator]
+description: Build/maintain the goldfinger (GRAND SLAM) PROJECT BOND film package — market cornering, vault defense, laser threat physics.
 ---
 
-# goldfinger
+# goldfinger — GRAND SLAM
 
-Project-scoped skill for the in-repo exemplar at
-`projects/working/bond/goldfinger/`. Load this when working inside the project.
+PROJECT BOND film package for Goldfinger (1964). Scope = this directory only,
+local-only (no remote), path-scoped commits.
 
-## When to Use
+## Concepts built (phase 2)
 
-- Working inside the `goldfinger` exemplar — running scripts, editing source,
-  or regenerating outputs.
-- Forking this exemplar as the starting scaffold for a new research project.
-- Validating that the exemplar's contracts (thin-orchestrator, layer boundaries,
-  no-mocks testing) still hold after changes.
+- `src/goldfinger/market_attack.py` — gold-market cornering: constant-elasticity
+  inverse demand + tatonnement supply-shock price dynamics (`simulate_corner`,
+  `shocked_equilibrium_price`, `price_gain`).
+- `src/goldfinger/vault_security.py` — Fort Knox-style layered defense:
+  weighted defense-in-depth score + product-rule sequential penetration
+  (`layered_security_score`, `penetration_probability`, `expected_breach_time`).
+- `src/goldfinger/laser_physics.py` — laser threat physics: energy-balance
+  burn-through time vs material/power (`burn_through_time`).
+- `src/goldfinger/mission.py` — BOND-API `MissionProvider` adapter (film
+  `goldfinger`, codename `GRAND SLAM`), gadget registration, provenance.
+- `manuscript_variables.py` (25 tokens), `figures/plots.py` (3 figures),
+  thin `scripts/` CLIs.
 
-## Quick Reference
+## Quick reference
 
 ```bash
-# From the repository root
-uv run pytest projects/working/bond/goldfinger/tests --cov=projects/working/bond/goldfinger/src --cov-fail-under=90
-uv run python scripts/pipeline/stage_02_analysis.py --project templates/goldfinger
-uv run python scripts/pipeline/stage_03_render.py --project templates/goldfinger
-uv run python scripts/pipeline/stage_04_validate.py --project templates/goldfinger
-uv run python scripts/pipeline/stage_05_copy.py --project templates/goldfinger
+uv sync --extra dev
+uv run python scripts/debrief.py
+uv run python scripts/z_generate_manuscript_variables.py
+uv run python -m pytest tests/ --cov=src/goldfinger --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
+uv run mypy src/goldfinger scripts
 ```
 
 ## Pitfalls
 
-- **Keep scripts thin.** Business logic belongs in `src/` or shared
-  `infrastructure/`, not in `scripts/`.
-- **No mocks.** All tests must use real data, real files, and real
-  computation.
-- **Outputs are disposable.** Never hand-edit `output/` — regenerate from
-  source and config.
-- **Keep tracked benchmarks deterministic.** Serialize reproducible inputs,
-  objective values, and checks; keep wall-clock timing as a runtime-only
-  diagnostic.
-- **Run from the repo root.** Commands assume the template monorepo root
-  as working directory unless the child `AGENTS.md` states otherwise.
-
-## Cross-refs
-
-- Project contract: [`AGENTS.md`](../../../AGENTS.md)
-- README: [`README.md`](../../../README.md)
-- TODO: [`TODO.md`](../../../TODO.md)
-- Exemplar roster: [`projects/AGENTS.md`](../../../../../AGENTS.md)
+- Keep the pure core importable WITHOUT bond-api; only `mission.py` imports it.
+- Inject all result metrics as `{{TOKEN}}`s; never hand-author numbers in prose.
+- The mission adapter uses `bond_api` (FROZEN) — do not invent protocol types.
+- Zero mocks; fixed seed 2026; `output/` is git-ignored.

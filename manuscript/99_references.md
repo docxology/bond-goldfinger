@@ -1,10 +1,9 @@
-# References {#sec:references}
+# References
 
-Bibliography lives in [`manuscript/references.bib`](references.bib) and is read by Pandoc during PDF render. The build pipeline invokes Pandoc with `--natbib`, so every `[@key]` citation in the manuscript is rewritten to the appropriate `\cite{}`/`\citep{}`/`\citet{}` LaTeX command and resolved against the bib file.
-
-To validate that `references.bib` is syntactically clean and contains the required fields per entry type:
-
-```bash
-uv run python -m infrastructure.reference.citation.cli validate \
-    projects/working/bond/goldfinger/manuscript/references.bib --strict
-```
+Walras [1] formalized the tatonnement price-adjustment process that underpins
+the market-cornering model; Hicks [2] provides the constant-elasticity demand
+to which a sterile supply shock is applied. Veil and Rungta [3] describe the
+layered defense-in-depth scoring and product-rule penetration probabilities
+used by the vault assessment. Steen and Mazumder [4] give the continuous-wave
+laser energy-balance model from which burn-through time is derived. The
+mission-adapter contract follows the frozen BOND-API protocol [5].

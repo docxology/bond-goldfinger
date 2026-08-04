@@ -1,22 +1,24 @@
-authors:
-- affiliation: Active Inference Institute
-  family-names: Friedman
-  given-names: Daniel Ari
-  orcid: 0000-0001-6232-9096
 cff-version: 1.2.0
-date-released: '2026-07-10'
-doi: 10.5281/zenodo.20417136
+message: "If you use this software, please cite it as below."
+title: "Goldfinger: GRAND SLAM — Special-Agent Mission Software"
+abstract: >-
+  PROJECT BOND film package modelling the gold-market cornering model, layered
+  vault defense assessment, and laser threat physics from Goldfinger (1964) as
+  deterministic, fully-tested scientific modules exposed via the frozen
+  BOND-API MissionProvider protocol.
+authors:
+  - family-names: Friedman
+    given-names: Daniel Ari
+    orcid: "https://orcid.org/0000-0001-6232-9096"
+    affiliation: "Active Inference Institute"
+version: "0.1.0"
+date-released: "2026-08-04"
+license: "MIT"
 keywords:
-- optimization algorithms
-- gradient descent
-- convergence analysis
-- numerical methods
-- mathematical programming
-- reproducible research
-- infrastructure automation
-license: MIT
-message: If you use this software, please cite it using the metadata from this file.
-repository-code: https://github.com/docxology/goldfinger
-title: Convergence Analysis of Gradient Descent Optimization
-type: software
-version: 2.5.2
+  - gold-market cornering
+  - supply shock price dynamics
+  - defense-in-depth security
+  - vault penetration assessment
+  - laser threat physics
+  - burn-through time
+  - deterministic simulation

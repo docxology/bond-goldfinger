@@ -1,57 +1,19 @@
+# Claim ledger — goldfinger (GRAND SLAM)
+
+# Registers sourced numeric claims for evidence-registry validation. Each
+# claim points at the deterministic source that backs it; no claim is a
+# hand-authored constant in prose.
+
 claims:
-  - claim_id: figure-export-dpi
-    kind: number
-    value: 300
-    source: projects/working/bond/goldfinger/src/viz_config.py plotting defaults (dpi)
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/convergence_plot.png
-  - claim_id: step-size-sensitivity-cap
-    kind: number
-    value: 500
-    source: projects/working/bond/goldfinger/src/sweeps.py sensitivity_sweep max_iter cap
-    source_tier: generated_metric
-    freshness: active
-    artifact_path: output/figures/step_size_sensitivity.png
-  - claim_id: stability-log-lower
-    kind: number
-    value: -6
-    source: projects/working/bond/goldfinger/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: solution-relative-error-exponent
-    kind: number
-    value: -4
-    source: projects/working/bond/goldfinger/manuscript/03_results.md stated precision threshold
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: manuscript/03_results.md
-  - claim_id: stability-log-upper
-    kind: number
-    value: -9
-    source: projects/working/bond/goldfinger/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: benchmark-tolerance-exponent
-    kind: number
-    value: -10
-    source: projects/working/bond/goldfinger/scripts/optimization_analysis.py dimensional benchmark tolerance
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-min-iterations
-    kind: number
-    value: 219
-    source: projects/working/bond/goldfinger/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-max-iterations
-    kind: number
-    value: 238
-    source: projects/working/bond/goldfinger/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
+  - id: "market_price_gain"
+    claim: "a 30 percent supply cut at elasticity 1.25 raises price by ~33 percent"
+    source: "goldfinger.market_attack.price_gain(REFERENCE_MODEL)"
+    token: "MARKET_PRICE_GAIN_PCT"
+  - id: "vault_composite_score"
+    claim: "the reference vault scores ~0.780 (medium security), penetration ~0.009 percent"
+    source: "goldfinger.vault_security.layered_security_score / penetration_probability"
+    token: "VAULT_SCORE / VAULT_PENETRATION_PCT"
+  - id: "laser_burn_through"
+    claim: "a 5000 W beam with 0.6 absorptivity burns a 50 mm steel plate in ~0.98 s"
+    source: "goldfinger.laser_physics.burn_through_time(REFERENCE_PHYSICS)"
+    token: "LASER_BURN_THROUGH_S"

@@ -1,60 +1,43 @@
-# Experimental Setup {#sec:experimental_setup}
+# Experimental Setup
 
-This section details the complete experimental configuration used to generate the results in this study. Every parameter value below is injected programmatically from `config.yaml` and the analysis pipeline — no value is hardcoded in the manuscript source.
+## Reference intel
 
-## Problem Definition
+The deterministic reference parameters used by the pure domain core are
+declared in `manuscript/config.yaml` under `grand_slam:` and mirrored in each
+module's `REFERENCE_*` constant:
 
-The optimization target is the quadratic objective function defined in [@eq:quadratic_objective]:
+- **Market**: reference price `${{MARKET_REFERENCE_PRICE}}`/oz, normalized
+  floatable supply index `100.0`, fraction removed
+  `{{MARKET_FRACTION_REMOVED}}%`, elasticity `{{MARKET_ELASTICITY}}`,
+  tatonnement adjustment `0.4`, steps `40`.
+- **Vault**: six layers (perimeter, fence, guard response, vault door,
+  combination lock, gold storage) each rated in `[0,1]`; weights in
+  `DEFAULT_WEIGHTS`.
+- **Laser**: power `{{LASER_POWER_W}}` W, spot area `1e-5` m², steel density
+  `7800` kg/m³, thickness `{{LASER_THICKNESS_MM}}` mm, specific heat
+  `500` J/(kg·K), $\Delta T$ `1500` K, absorptivity `0.6`.
 
-\begin{equation}
-\label{eq:quadratic_objective}
-f(x) = \frac{1}{2} x^T A x - b^T x
-\end{equation}
+## Determinism policy
 
-with $A = {{CONFIG_QUADRATIC_A}}$ and $b = {{CONFIG_QUADRATIC_B}}$, yielding the analytical optimum at $x^* = {{RESULT_OPTIMUM_X}}$ with $f(x^*) = {{RESULT_OPTIMUM_F}}$.
+All computations use fixed seeds (`seed = 2026` in the mission adapter) and
+make no random draws. Persisted artifacts carry no wall-clock dependence
+(`wall_time_s = 0.0` in provenance; the only varying timestamp is the
+`GENERATION_TIMESTAMP` manuscript token, which defaults to
+{{GENERATION_TIMESTAMP}}). Figure outputs are byte-deterministic for fixed
+inputs.
 
-## Parameter Space
+## Software environment
 
-The experiment systematically varies the gradient descent step size across {{CONFIG_NUM_STEP_SIZES}} values:
+- Python: as resolved by `uv` (the package requires `>=3.10`)
+- Dependencies: NumPy, Matplotlib, PyYAML, and the frozen `bond-api` protocol
+  (local path dependency under
+  `/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api`)
+- Dev: pytest, pytest-cov, mypy, ruff, types-PyYAML
 
-{{CONFIG_STEP_SIZES_BULLETS}}
+## Mission adapter
 
-All runs start from the initial point $x_0 = {{CONFIG_INITIAL_POINT}}$ and use a convergence tolerance of $\|{\nabla f}\| < {{CONFIG_CONVERGENCE_TOL}}$ with a maximum iteration limit of $N_{\max} = {{CONFIG_MAX_ITERATIONS}}$.
-
-## Numerical Stability Grid
-
-To validate robustness, the optimizer is exercised across a grid of {{CONFIG_NUM_STABILITY_STARTS}} starting points and {{CONFIG_NUM_STABILITY_STEPS}} step sizes, producing {{CONFIG_STABILITY_CELLS}} total evaluations. This comprehensive sweep confirms that convergence is not an artifact of a narrow parameter choice. The stability metric is computed for the `{{STABILITY_FUNCTION}}` objective via `infrastructure.scientific.stability.check_numerical_stability()`.
-
-## Dimensional Scaling
-
-Performance benchmarking spans problem dimensions $d \in \{{{CONFIG_BENCHMARK_DIMS}}\}$, from the scalar case ($d = {{CONFIG_BENCHMARK_MIN_DIM}}$) to moderate dimensionality ($d = {{CONFIG_BENCHMARK_MAX_DIM}}$), using identity-Hessian quadratics to isolate algorithmic scaling from problem conditioning effects. The tracked `output/reports/performance_benchmark.json` records fixed inputs, exact objective values, and validation checks. Wall-clock timing is retained only as a runtime diagnostic because host load and hardware make microsecond values unsuitable as pinned reproducibility claims.
-
-## Computational Environment
-
-- **Python**: {{PYTHON_VERSION}}
-- **NumPy**: {{NUMPY_VERSION}}
-- **Platform**: {{PLATFORM}}
-- **Generated**: {{GENERATION_TIMESTAMP}}
-
-## Pipeline ordering
-
-Typical `goldfinger` analysis order (see `scripts/pipeline/stage_02_analysis.py` discovery) is:
-
-1. `optimization_analysis.py` — writes `output/data/optimization_results.csv`, `output/figures/*.png`, and JSON reports under `output/reports/`.
-2. `z_generate_manuscript_variables.py` — reads the CSV and YAML, emits `output/data/manuscript_variables.json`, and writes substituted copies to `output/manuscript/` for rendering.
-3. `generate_api_docs.py` — refreshes API markdown consumed by documentation targets.
-
-PDF compilation then reads from `output/manuscript/` so that figure paths and numeric tables match the analysis that just completed.
-
-## Relation to figures
-
-| Figure ([@sec:results]) | Primary inputs |
-|--------------------|------------------|
-| Convergence trajectories | `experiment.step_sizes`, `initial_point`, `tolerance`, `max_iterations` |
-| Step-size sensitivity | Dense $\alpha$ sweep internal to `generate_step_size_sensitivity_plot()` |
-| Convergence rate | Same trajectories as above; tolerance line uses `convergence_tolerance` |
-| Complexity quad panel | One bar chart per row of `optimization_results.csv` |
-| Stability heatmap | `stability_starting_points` $\times$ `stability_step_sizes` |
-| Dimensional benchmark | `benchmark_dimensions`, fixed $\alpha=0.1$, internal tol $10^{-10}$ |
-
-This table is descriptive documentation only; it is not executed as code during the build.
+The BOND-API `MissionProvider` (`src/goldfinger/mission.py`) wraps the three
+models and registers three gadgets (`market_corner`, `vault_defense`,
+`laser_threat`) with a `GadgetRegistry`. It is discoverable by slug
+`goldfinger` on `sys.path` and drives the full brief–recon–plan–execute–
+debrief lifecycle with deterministic provenance.

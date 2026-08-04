@@ -1,83 +1,29 @@
-# `goldfinger` - The Repository Exemplar
+# Manuscript: goldfinger (GRAND SLAM)
 
-This is the stable code exemplar for the Research Project Template: a tested numerical optimization implementation routed through the shared infrastructure, project test suite, and manuscript renderer.
+This directory holds the report manuscripts rendered from the numbered markdown
+sections, with `{{VARIABLE}}` token substitution performed by
+`scripts/z_generate_manuscript_variables.py`.
 
-It demonstrates the complete research pipeline from algorithm implementation through strict validation to multi-format result visualization.
+## File roles
 
-## Template Architecture
+| File | Role |
+|---|---|
+| `config.yaml` | Identity + publication metadata + deterministic reference intel |
+| `config.yaml.example` | Reference copy of the configurable surface |
+| `00_abstract.md` … `07_scope_and_related_work.md` | Numbered prose sections (token + figure sources) |
+| `99_references.md` | Reference list |
+| `references.bib` | BibTeX bibliography |
+| `preamble.md` | Header / identity block |
+| `SYNTAX.md` | Figure, citation, and variable syntax reference |
 
-This project is explicitly designed to showcase the repository's three foundational pillars:
+## Token protocol
 
-1. **`infrastructure/` Layer**: The code delegates tracking, performance benchmarking, stability validation, and PDF rendering to the shared infrastructure packages at the repository root. Current package counts live in [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md).
-2. **`tests/` Integrity**: A zero-mock suite ([`projects/working/bond/goldfinger/tests/`](../tests/)) with **≥90%** coverage on `projects/working/bond/goldfinger/src/`. Live test count and measured coverage: [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md).
-3. **`docs/` Orchestration**: Project documentation under `projects/working/bond/goldfinger/docs/` records the operational patterns and is checked by the repository documentation lint gates.
+All result metrics must use `{{VARIABLE}}` syntax sourced from
+`src/goldfinger/manuscript_variables.py::generate_variables()`. Never
+hand-author measured numbers in prose. The live test
+`tests/test_manuscript_variables.py` asserts every `{{TOKEN}}` in the numbered
+sections exists in the generated map.
 
-## Manuscript Structure
+Regenerate: `uv run python scripts/z_generate_manuscript_variables.py`
 
-The `manuscript/` directory contains the raw markdown files that the renderer (`infrastructure/rendering/pdf_renderer.py`) transforms into the final academic PDF. These files are designed as a meta-narrative to demonstrate exactly how the repository executes:
-
-- `00_abstract.md`: Abstract; build variables and CSV-backed prose via `scripts/z_generate_manuscript_variables.py`.
-- `01_introduction.md`: Introduction of the infrastructure pillars bridging to CI/CD files.
-- `02_methodology.md`: Mathematical methods mapping to specific python script execution lines.
-- `03_results.md`: Convergence analysis built via `infrastructure.reporting`, pointing back at itself.
-- `04_conclusion.md`: Summary of the template automation and publication outputs.
-
-## Architecture
-
-The project acts as a bridge between custom mathematical logic and the repository's core:
-
-```mermaid
-graph TD
-    classDef infra fill:#f5f5f5,stroke:#333,stroke-width:2px;
-    classDef project fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
-    classDef docs fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
-
-    subgraph "Project Space (`projects/working/bond/goldfinger/`)"
-        Script["scripts/optimization_analysis.py"]:::project
-        Manuscript["manuscript/*.md"]:::project
-    end
-
-    subgraph "Template Ecosystem"
-        Tests["tests/ (see canonical facts)"]:::docs
-        Config["config.yaml & preamble.md"]:::docs
-
-        subgraph "`infrastructure/`"
-            Validation["infrastructure.validation"]:::infra
-            Scientific["infrastructure.scientific"]:::infra
-            Reporting["infrastructure.reporting"]:::infra
-            Rendering["infrastructure.rendering"]:::infra
-        end
-    end
-
-    Script -->|Delegates precision checks| Scientific
-    Script -->|Tested strictly by| Tests
-    Tests -->|Protected by| Validation
-    Script -->|Generates data for| Reporting
-    Reporting -->|Formats| Manuscript
-    Manuscript -->|Compiled with| Config
-    Config -->|Sent to| Rendering
-    Rendering -->|Produces| PDF["output/templates/goldfinger/pdf/template_code_project_combined.pdf"]:::project
-```
-
-## Quick Start
-
-Experience the automated pipeline directly:
-
-```bash
-# From repository root
-uv run python projects/working/bond/goldfinger/scripts/optimization_analysis.py
-
-uv run python scripts/pipeline/stage_03_render.py --project templates/goldfinger
-
-open output/templates/goldfinger/pdf/template_code_project_combined.pdf
-```
-
-## AI Agent Directives
-
-If you are an AI agent operating in this repository, you **MUST** read [`AGENTS.md`](AGENTS.md) before executing any code modifications. It defines the zero-mock testing constraints and infrastructure coupling rules.
-
-## See also
-
-- [`SYNTAX.md`](SYNTAX.md) — Pandoc citation / cross-reference conventions for this manuscript.
-- [`../../../docs/guides/manuscript-semantics.md`](../../../../docs/guides/manuscript-semantics.md) — Repository-wide manuscript semantics.
-- [`../../../AGENTS.md`](../../../AGENTS.md#permanent-canonical-exemplars) — public exemplar roster.
+See also: `../docs/agent_instructions.md` and `../AGENTS.md`.
