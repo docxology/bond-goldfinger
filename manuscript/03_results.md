@@ -86,5 +86,17 @@ Rayleigh range materially degrades the threat.
 All {{GOLDFINGER_MODULE_COUNT}} model results above are computed by the pure
 domain core and injected here as generated variables — none is typed by hand,
 including the counts in this sentence. Re-running the pipeline reproduces
-identical numbers from the single deterministic source of truth, and a test
-asserts that no result value appears in this prose as a literal.
+identical numbers from the module `REFERENCE_*` constants.
+
+The no-hardcoding claim is gated, with a stated limit. Every computed result
+token is classified, and each one whose value is a numeric literal of at least
+three characters is searched for in the rendered prose (the numbered sections
+and `preamble.md`), with a positive control that pastes each value in turn and
+confirms the scan flags it. The remaining computed tokens — bare small integers
+such as the module and layer counts, and categorical words such as the vault
+verdict and the laser severity — **are not scanned**, because searching prose
+for `6` or `medium` finds ordinary English rather than a pasted result. Those
+tokens are listed explicitly in the test with the reason, and a further test
+asserts the list is exactly what the rule rejects, so the hole cannot widen
+silently. It is a real hole nonetheless: a hand-typed module count in this
+prose would not be caught by the scan.

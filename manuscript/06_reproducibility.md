@@ -44,12 +44,18 @@ mocking framework anywhere.
 
 ## Change policy
 
-- Result metrics in the prose are injected from `manuscript/config.yaml` and
-  `src/goldfinger/manuscript_variables.py`; do not hardcode numbers in prose,
-  including counts of modules, figures, tokens, or tests.
+- Result metrics in the prose are injected by
+  `src/goldfinger/manuscript_variables.py` from the module `REFERENCE_*`
+  constants; do not hardcode numbers in prose, including counts of modules,
+  figures, tokens, or tests. The hardcode scan cannot police the count and
+  category tokens (their values are too short or too word-like to search for),
+  so that part of the rule is enforced by review, not by a gate.
 - The pure domain modules must remain infrastructure-free and importable
   without `bond-api` (`mission.py` is the only module that imports it).
 - Reference parameters live in exactly one place — the module `REFERENCE_*`
-  constants, mirrored by `manuscript/config.yaml`. The mission adapter, the
-  token map, and the figures all read those constants rather than repeating a
-  literal, so the three cannot report different postures.
+  constants. The mission adapter, the token map, and the figures all read those
+  constants rather than repeating a literal, so the three cannot report
+  different postures. `manuscript/config.yaml`'s `grand_slam:` block is a
+  read-only mirror that no code loads; `tests/test_reference_intel.py` pins it
+  to the constants value-for-value and also pins the two laser models to one
+  physical steel plate.

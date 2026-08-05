@@ -54,11 +54,18 @@ defect even if it works.
 - **No hand-authored metrics in prose.** Every number in `manuscript/` arrives
   as a `{{TOKEN}}`; every number in `docs/` either cites
   `_generated/COUNTS.md` or describes the gate. Counts of modules, figures, and
-  tokens are numbers too — they have tokens.
+  tokens are numbers too — they have tokens. The scan enforces this only for
+  values that are numeric literals of three or more characters; counts and
+  category words are listed as an acknowledged hole in
+  `_UNSCANNABLE_RESULT_TOKENS`. Never write a count of something *outside* this
+  package (sibling packages, the fleet) — there is no token or gate for it.
 - **Single source of truth for reference intel.** Parameters live in the module
-  `REFERENCE_*` constants (mirrored by `manuscript/config.yaml`). The adapter,
-  the token map, and the figures read those constants. Do not repeat a literal
-  in a second place — that is how three "authoritative" values diverge.
+  `REFERENCE_*` constants. The adapter, the token map, and the figures read
+  those constants. Do not repeat a literal in a second place — that is how
+  three "authoritative" values diverge. The `grand_slam:` block in
+  `manuscript/config.yaml` is a mirror no code loads; `test_reference_intel.py`
+  pins it to the constants, so adding a `REFERENCE_*` constant means updating
+  the mirror too.
 - **Gates must be able to fail.** If you add an assertion, be able to state the
   input that turns it red, and prefer adding that input as a positive-control
   test. See `test_the_anti_hardcode_gate_can_actually_fail`.

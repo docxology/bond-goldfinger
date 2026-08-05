@@ -5,13 +5,20 @@ This file covers manuscript-specific editing for the goldfinger package.
 
 ## Layer contract
 
-- `config.yaml` is the single source of truth for identity, publication, and
-  reference-intel values. Do not duplicate reference numbers in prose; inject
-  them as `{{VARIABLE}}` tokens.
-- The numbered prose sections (`[0-9]*.md`) must reference every result metric
-  as a token; the live test
+- `config.yaml` is the source of truth for identity and publication metadata
+  only. Reference-intel values live in the module `REFERENCE_*` constants; the
+  `grand_slam:` block here is an unloaded mirror pinned to them by
+  `tests/test_reference_intel.py`. Do not duplicate reference numbers in prose;
+  inject them as `{{VARIABLE}}` tokens.
+- The **rendered** files — the numbered `[0-9]*.md` sections and `preamble.md`,
+  as returned by `manuscript_variables.manuscript_prose_paths()` — must
+  reference every result metric as a token; the live test
   `tests/test_manuscript_variables.py::test_all_manuscript_tokens_are_generated_live`
-  fails if a section uses an unterminated or missing token.
+  fails if a rendered file uses an unterminated or missing token. Do not write
+  a literal `{{...}}` placeholder into a rendered file; put examples in
+  `SYNTAX.md`, which is a guide file.
+- Do not write a count of anything outside this package (sibling packages, the
+  fleet) into prose: there is no token, no producer, and no gate for it.
 
 ## Editing protocol
 

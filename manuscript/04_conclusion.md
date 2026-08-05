@@ -21,9 +21,11 @@ run and audit.
   spatio-temporal Gaussian/Carslaw–Jaeger model whose effective burn range falls
   as the beam defocuses with distance.
 
-Every headline number in this report is a generated variable from a single
-deterministic source of truth, real computation only, with no mocked
-dependencies and no hardcoded measured counts. The package ships as a
+Every headline number in this report is a generated variable computed from the
+module `REFERENCE_*` constants — real computation only, no mocked dependencies.
+The scanned subset of those values is gated against being retyped as a prose
+literal; the count and category tokens are not scannable and rest on review
+instead (see Results). The package ships as a
 BOND-API `MissionProvider` (film `goldfinger`, codename `GRAND SLAM`), so all
 {{GOLDFINGER_MODULE_COUNT}} models are discoverable and drivable by the suite's
 orchestrator through the full mission lifecycle — the adapter's public shape is

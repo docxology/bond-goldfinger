@@ -47,8 +47,14 @@ metadata:
   license: "MIT"
   language: "en"
 
-# Deterministic reference intel consumed by the domain core and manuscript
-# variables (single source of truth for the mission's headline numbers).
+# Deterministic reference intel. This block is a MIRROR, not the source: the
+# authoritative values are the module REFERENCE_* constants in
+# src/goldfinger/, which are what the domain core, the mission adapter, the
+# figures, and the manuscript token map actually read. Nothing loads the block
+# below at runtime. It exists so the intel is readable in one place without
+# opening six modules, and tests/test_reference_intel.py asserts key-for-key
+# and value-for-value that it still agrees with those constants — edit one
+# side alone and that test goes red.
 grand_slam:
   market:
     reference_price: 1850.0     # USD / troy ounce
@@ -69,8 +75,8 @@ grand_slam:
     area: 1.0e-5                # m^2 focused spot
     density: 7800.0             # kg/m^3 (steel)
     thickness: 0.05             # m
-    specific_heat: 500.0        # J/(kg K)
-    delta_temperature: 1500.0   # K
+    specific_heat: 460.0        # J/(kg K)
+    delta_temperature: 1200.0   # K — ambient 300 K -> melt 1500 K
     absorptivity: 0.6
   reserve_attack:
     parity: 1.0                 # units home currency per unit gold (fixed peg)

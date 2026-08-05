@@ -12,6 +12,7 @@ from goldfinger.manuscript_variables import (
     GOLDFINGER_TOKENS,
     generate_variables,
     load_mission_config,
+    manuscript_prose_paths,
 )
 
 _PKG_ROOT = Path(__file__).resolve().parents[1]
@@ -83,16 +84,17 @@ def test_generate_variables_version_hash_is_stable(tmp_path: Path) -> None:
 
 
 def test_all_manuscript_tokens_are_generated_live() -> None:
-    """Every ``{{TOKEN}}`` referenced in numbered prose sections must exist.
+    """Every ``{{TOKEN}}`` in a *rendered* manuscript file must exist.
 
-    Scans ``manuscript/[0-9]*.md`` only (guide files legitimately show literal
-    ``{{TOKEN}}`` placeholders).
+    Rendered files are the numbered sections plus ``preamble.md``
+    (:func:`manuscript_prose_paths`). Guide files legitimately show literal
+    ``{{TOKEN}}`` placeholders and are excluded.
     """
     variables = generate_variables(
         project_root=_PKG_ROOT, now=datetime(2026, 1, 1, tzinfo=timezone.utc)
     )
-    prose = sorted(_PKG_ROOT.glob("manuscript/[0-9]*.md"))
-    assert prose, "expected numbered manuscript sections to exist"
+    prose = manuscript_prose_paths(_PKG_ROOT)
+    assert prose, "expected rendered manuscript files to exist"
     tokens: set[str] = set()
     for section in prose:
         text = section.read_text(encoding="utf-8")
@@ -100,3 +102,36 @@ def test_all_manuscript_tokens_are_generated_live() -> None:
     assert tokens, "no tokens found in manuscript prose"
     missing = sorted(tok for tok in tokens if tok not in variables)
     assert not missing, f"unresolved manuscript tokens: {missing}"
+
+
+def test_the_scanned_file_set_includes_the_preamble() -> None:
+    """The preamble's six identity tokens are inside the gate, not beside it."""
+    names = {path.name for path in manuscript_prose_paths(_PKG_ROOT)}
+    assert "preamble.md" in names
+    assert "01_introduction.md" in names
+    assert "README.md" not in names, "guide files must stay out of the token gate"
+
+
+def test_prose_paths_omit_a_preamble_that_does_not_exist(tmp_path: Path) -> None:
+    """A tree without a preamble yields only its numbered sections."""
+    manuscript = tmp_path / "manuscript"
+    manuscript.mkdir(parents=True)
+    (manuscript / "01_intro.md").write_text("# intro\n", encoding="utf-8")
+    (manuscript / "README.md").write_text("# guide\n", encoding="utf-8")
+    assert [p.name for p in manuscript_prose_paths(tmp_path)] == ["01_intro.md"]
+
+
+def test_the_live_token_gate_can_actually_fail_on_the_preamble() -> None:
+    """Positive control: an unknown token in the preamble is caught.
+
+    Reads the committed preamble, appends a token that is not generated, and
+    shows the same membership check the gate performs now reports it.
+    """
+    variables = generate_variables(
+        project_root=_PKG_ROOT, now=datetime(2026, 1, 1, tzinfo=timezone.utc)
+    )
+    preamble = (_PKG_ROOT / "manuscript" / "preamble.md").read_text(encoding="utf-8")
+    contaminated = preamble + "\nversion {{GOLDFINGER_VERSIOM}}\n"
+    found = set(re.findall(r"\{\{([A-Z0-9_]+)\}\}", contaminated))
+    assert "GOLDFINGER_VERSIOM" in found
+    assert [tok for tok in found if tok not in variables] == ["GOLDFINGER_VERSIOM"]

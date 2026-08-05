@@ -46,9 +46,13 @@ def test_energy_to_burn_invalid() -> None:
 
 
 def test_burn_through_time_reference() -> None:
-    # Q = 2925 J, P_abs = 3000 W -> t ~ 0.975 s
-    t = burn_through_time(5000.0, 1.0e-5, 7800.0, 0.05, 500.0, 1500.0, absorptivity=0.6)
-    assert t == pytest.approx(0.975, rel=1e-6)
+    # Hand-computed against the reference plate: Q = rho*A*d*c*dT
+    # = 7800 * 1e-5 * 0.05 * 460 * 1200 = 2152.8 J; P_abs = 0.6 * 5000 = 3000 W
+    # -> t = 0.7176 s. The literals here are an independent restatement of the
+    # arithmetic, so if REFERENCE_PHYSICS changes this test must be re-derived
+    # rather than silently tracking it.
+    t = burn_through_time(5000.0, 1.0e-5, 7800.0, 0.05, 460.0, 1200.0, absorptivity=0.6)
+    assert t == pytest.approx(0.7176, rel=1e-6)
     assert t == burn_through_time(
         REFERENCE_PHYSICS["power"],
         REFERENCE_PHYSICS["area"],

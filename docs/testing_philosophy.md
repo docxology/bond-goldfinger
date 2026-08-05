@@ -68,10 +68,11 @@ declared in more than one file, write the test that compares them.
 | `test_laser_thermal.py` | Rayleigh range, defocusing, Carslaw–Jaeger surface temperature, melt time, effective burn range |
 | `test_mission.py` | Provider lifecycle, deterministic outcome, enriched result payload, gadget registration |
 | `test_protocol_integration.py` | The **frozen** surface: slug discovery, protocol conformance, serialization round-trip, `GADGETS` / `register_market_gadgets` presence |
-| `test_manuscript_variables.py` | Config loading, token completeness, and the live token cross-reference gate (every `{{TOKEN}}` in `manuscript/[0-9]*.md` must exist) |
-| `test_guards_and_contracts.py` | Every remaining type/value guard driven through a real bad argument, plus the self-description contracts and the anti-hardcode gate |
+| `test_manuscript_variables.py` | Config loading, token completeness, and the live token cross-reference gate (every `{{TOKEN}}` in a rendered file — numbered sections **and** `preamble.md` — must exist), with a positive control that fails on an unknown preamble token |
+| `test_guards_and_contracts.py` | Every remaining type/value guard driven through a real bad argument, plus the self-description contracts, the token partition, and the anti-hardcode gate |
+| `test_reference_intel.py` | The `manuscript/config.yaml` `grand_slam:` mirror against all six module `REFERENCE_*` constants, cross-module steel agreement between the two laser models, and YAML loadability of everything shipped in `manuscript/` — each with a positive control |
 | `test_package_metadata.py` | Version and identity agreement across `pyproject.toml`, `manuscript/config.yaml`, `CITATION.cff`, `.zenodo.json`, `codemeta.json`, the package, and the provenance string — plus the absence of fabricated DOIs and repository URLs |
-| `test_figures.py` | PNG render and byte-level determinism |
+| `test_figures.py` | PNG render, and byte-level determinism parametrised over **every** exported renderer (two fresh directories, plus an overwrite in place) |
 | `test_scripts_smoke.py` | Subprocess runs of the thin CLIs and both generators via `sys.executable`, in a sandbox copy of the tree |
 
 ## Error branches

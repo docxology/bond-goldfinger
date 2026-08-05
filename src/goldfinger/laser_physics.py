@@ -165,12 +165,20 @@ class _Physics(TypedDict):
 
 
 #: Reference intel used by the GRAND SLAM mission provider (SI units).
+#:
+#: The steel constants (``density``, ``specific_heat``) and the temperature rise
+#: describe the *same* reference vault plate as
+#: :data:`goldfinger.laser_thermal.REFERENCE_BEAM`, so they are numerically
+#: consistent with it by construction: ``delta_temperature`` is exactly that
+#: module's ``melt_temp - ambient`` (1500 K − 300 K). Consistency is not left to
+#: care — ``tests/test_reference_intel.py`` asserts it, and the assertion goes
+#: red if either module's steel is edited alone.
 REFERENCE_PHYSICS: _Physics = {
     "power": 5000.0,  # W — military-grade continuous-wave laser
     "area": 1.0e-5,  # m² — focused spot (≈3.6 mm diameter)
     "density": 7800.0,  # kg/m³ — mild steel vault plate
     "thickness": 0.05,  # m — 50 mm vault plate
-    "specific_heat": 500.0,  # J/(kg·K) — steel specific heat
-    "delta_temperature": 1500.0,  # K — ambient → melting threshold
+    "specific_heat": 460.0,  # J/(kg·K) — steel specific heat
+    "delta_temperature": 1200.0,  # K — ambient 300 K → melt 1500 K
     "absorptivity": 0.6,  # fraction of incident power absorbed
 }

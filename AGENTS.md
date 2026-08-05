@@ -75,11 +75,20 @@ the discovery contract. `tests/test_protocol_integration.py` is the tripwire.
   from `manuscript_variables.py`; doc numbers cite `docs/_generated/COUNTS.md`
   or describe the gate. Counts of modules, figures, and tokens are numbers too
   — they have derived tokens (`GOLDFINGER_MODULE_COUNT`,
-  `GOLDFINGER_FIGURE_COUNT`, `GOLDFINGER_TOKEN_COUNT`).
+  `GOLDFINGER_FIGURE_COUNT`, `GOLDFINGER_TOKEN_COUNT`). The hardcode scan does
+  **not** cover those count tokens or the categorical ones (values too short or
+  too word-like to search for); that hole is enumerated in
+  `_UNSCANNABLE_RESULT_TOKENS` and explained in `docs/architecture.md`. A count
+  of something outside this package (sibling packages, the fleet) has no token,
+  no producer, and no gate — do not write one into prose at all.
 - **Single source of truth for reference intel.** Parameters live in the module
-  `REFERENCE_*` constants, mirrored by `manuscript/config.yaml`. The adapter,
-  the token map, and the figures all read those constants; never repeat a
-  literal in a second place.
+  `REFERENCE_*` constants. The adapter, the token map, and the figures all read
+  those constants; never repeat a literal in a second place. The
+  `grand_slam:` block in `manuscript/config.yaml` is a read-only mirror that no
+  code loads — `tests/test_reference_intel.py` pins it to the constants, and a
+  new `REFERENCE_*` constant must be added to the mirror or that test fails.
+  Cross-module physical constants (the steel shared by the two laser models)
+  are pinned by the same file.
 - **Every gate must be able to fail.** State the input that turns a new
   assertion red, and prefer shipping that input as a positive-control test.
 - Type hints and docstrings on every public function; ruff and mypy clean.

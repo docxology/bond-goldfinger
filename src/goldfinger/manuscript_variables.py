@@ -74,6 +74,7 @@ __all__ = [
     "concept_module_names",
     "generate_variables",
     "load_mission_config",
+    "manuscript_prose_paths",
     "render_counts_markdown",
 ]
 
@@ -94,6 +95,33 @@ def concept_module_names() -> tuple[str, ...]:
             path.stem for path in package_dir.glob("*.py") if path.stem not in _NON_CONCEPT_MODULES
         )
     )
+
+
+def manuscript_prose_paths(project_root: Path) -> tuple[Path, ...]:
+    """Every rendered manuscript file whose ``{{TOKEN}}``s are live.
+
+    This is the single definition of "the prose" that the manuscript gates
+    scan. It covers the numbered sections **and** ``preamble.md``, which is
+    rendered as the report's identity block and carries live tokens; the gates
+    previously globbed ``[0-9]*.md`` only, so those tokens were ungated and a
+    typo there would have rendered a literal ``{{...}}`` into the report.
+
+    Guide files (``README.md``, ``AGENTS.md``, ``SYNTAX.md``) are deliberately
+    excluded: they show ``{{TOKEN}}`` placeholders as documentation and are
+    never token-substituted.
+
+    Args:
+        project_root: Package root containing ``manuscript/``.
+
+    Returns:
+        Sorted numbered sections followed by ``preamble.md`` when it exists.
+    """
+    manuscript = project_root / "manuscript"
+    paths = sorted(manuscript.glob("[0-9]*.md"))
+    preamble = manuscript / "preamble.md"
+    if preamble.is_file():
+        paths.append(preamble)
+    return tuple(paths)
 
 
 def load_mission_config(project_root: Path) -> dict[str, Any]:

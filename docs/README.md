@@ -29,5 +29,6 @@ computes, then the module's own docstring, which carries the model derivation.
 - [`../TODO.md`](../TODO.md) — real remaining work and declared integration
   points
 - [`../manuscript/`](../manuscript/) — the numbered report sections,
-  `config.yaml` reference intel, and `references.bib`; its
+  `config.yaml` (identity, plus an unloaded mirror of the module
+  reference intel), and `references.bib`; its
   [`AGENTS.md`](../manuscript/AGENTS.md) covers the token protocol

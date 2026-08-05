@@ -39,7 +39,7 @@ Adapter and plumbing:
 | Module | Role |
 |---|---|
 | `src/goldfinger/mission.py` | The BOND-API `MissionProvider` adapter — the only module that imports `bond_api` |
-| `src/goldfinger/manuscript_variables.py` | Hydrates the `{{TOKEN}}` map from `manuscript/config.yaml` plus the reference constants; also renders `docs/_generated/COUNTS.md` |
+| `src/goldfinger/manuscript_variables.py` | Hydrates the `{{TOKEN}}` map — identity from `manuscript/config.yaml`, every intel value from the module `REFERENCE_*` constants; also defines the rendered-file set and renders `docs/_generated/COUNTS.md` |
 | `src/goldfinger/figures/plots.py` | One deterministic PNG renderer per concept model, listed in `figures.FIGURE_RENDERERS` |
 | `src/goldfinger/__init__.py` | Public API and the shared mission constants (`FILM`, `CODENAME`, `MISSION_SEED`, `LASER_SEVERITY_THRESHOLD_W`, `LASER_STANDOFF_RANGE_M`) |
 
@@ -79,7 +79,7 @@ deepen. See [`docs/architecture.md`](docs/architecture.md).
 src/goldfinger/       six concept modules + mission adapter + token map + figures/
 scripts/              thin CLIs: brief recon plan execute debrief
                       z_generate_manuscript_variables.py  z_generate_counts.py
-manuscript/           config.yaml (reference intel), numbered prose, references.bib
+manuscript/           config.yaml (identity + intel mirror), numbered prose, references.bib
 docs/                 architecture, testing philosophy, agent instructions, _generated/
 tests/                real-data tests, zero mocks, one file per module
 ```

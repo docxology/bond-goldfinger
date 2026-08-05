@@ -35,6 +35,7 @@ from goldfinger.manuscript_variables import (
     concept_module_names,
     generate_variables,
     load_mission_config,
+    manuscript_prose_paths,
     render_counts_markdown,
 )
 from goldfinger.market_attack import (
@@ -349,36 +350,190 @@ def test_converged_token_and_mission_outcome_agree() -> None:
 # Anti-hardcode gate: no computed result value appears as a prose literal
 # --------------------------------------------------------------------------
 
-#: Tokens whose values are *computed outcomes*. If one of these values turns up
-#: in the prose as a literal, someone typed a number instead of a token, and it
-#: will silently rot the next time the reference intel changes.
-_RESULT_TOKENS = (
-    "MARKET_SHOCKED_PRICE",
-    "MARKET_PRICE_GAIN_PCT",
-    "RESERVE_ATTACK_TIME",
-    "RESERVE_FLOOR_TIME",
-    "RESERVE_ATTACK_SUDDENNESS",
-    "VAULT_SCORE",
-    "VAULT_MIN_EFFORT",
-    "VAULT_HARDENED_EFFORT",
-    "LASER_BURN_THROUGH_S",
-    "LASER_EFFECTIVE_RANGE_M",
-    "LASER_RAYLEIGH_RANGE_M",
+# Every token in GOLDFINGER_TOKENS is classified into exactly one of the three
+# sets below, and ``test_every_token_is_classified_exactly_once`` enforces the
+# partition — so a token added to the map cannot quietly escape the scan by
+# being forgotten here.
+
+#: Identity, provenance, and self-describing metadata: not a measurement.
+_IDENTITY_TOKENS = frozenset(
+    {
+        "GOLDFINGER_TITLE",
+        "GOLDFINGER_SUBTITLE",
+        "GOLDFINGER_CODENAME",
+        "GOLDFINGER_FILM",
+        "GOLDFINGER_VERSION",
+        "GOLDFINGER_AUTHOR",
+        "GOLDFINGER_ORCID",
+        "GOLDFINGER_AFFILIATION",
+        "GOLDFINGER_KEYWORDS",
+        "GOLDFINGER_SEED",
+        "GENERATION_TIMESTAMP",
+        "GOLDFINGER_VERSION_HASH",
+    }
 )
+
+#: Declared reference *inputs* — mirrored in ``manuscript/config.yaml`` and
+#: pinned by ``tests/test_reference_intel.py``. These are allowed to appear in
+#: prose as literals in principle (they are the stated intel), so they are out
+#: of scope for the hardcode scan; their drift is caught by the mirror gate.
+_INPUT_TOKENS = frozenset(
+    {
+        "MARKET_REFERENCE_PRICE",
+        "MARKET_FRACTION_REMOVED",
+        "MARKET_ELASTICITY",
+        "MARKET_SUPPLY_INDEX",
+        "MARKET_ADJUSTMENT",
+        "MARKET_STEPS",
+        "MARKET_CONVERGENCE_TOLERANCE",
+        "RESERVE_PARITY",
+        "RESERVE_FOREIGN_RATE",
+        "RESERVE_ALPHA",
+        "RESERVE_CREDIT_0",
+        "RESERVE_GROWTH",
+        "VAULT_HARDENING_BUDGET",
+        "VAULT_GAIN_PER_UNIT",
+        "LASER_POWER_W",
+        "LASER_SPOT_AREA_M2",
+        "LASER_DENSITY_KGM3",
+        "LASER_THICKNESS_MM",
+        "LASER_SPECIFIC_HEAT",
+        "LASER_DELTA_T_K",
+        "LASER_ABSORPTIVITY",
+        "LASER_SEVERITY_THRESHOLD_W",
+        "LASER_WAIST_MM",
+        "LASER_WAVELENGTH_NM",
+        "LASER_CONDUCTIVITY",
+        "LASER_MELT_TEMP_K",
+        "LASER_AMBIENT_K",
+        "LASER_THREAT_WINDOW_S",
+    }
+)
+
+#: Tokens whose values are *computed outcomes* — the class that must never be
+#: typed into prose, because a pasted copy silently rots the next time the
+#: reference intel changes. Structural counts (modules, figures, tokens, layers,
+#: zones, path/critical edges) are derived numbers too, so they are computed
+#: results as well.
+_COMPUTED_RESULT_TOKENS = frozenset(
+    {
+        "GOLDFINGER_MODULE_COUNT",
+        "GOLDFINGER_FIGURE_COUNT",
+        "GOLDFINGER_TOKEN_COUNT",
+        "MARKET_SHOCKED_PRICE",
+        "MARKET_PRICE_GAIN_PCT",
+        "MARKET_CONVERGED",
+        "MARKET_CONVERGENCE_RESIDUAL",
+        "RESERVE_ATTACK_TIME",
+        "RESERVE_FLOOR_TIME",
+        "RESERVE_ATTACK_SUDDENNESS",
+        "RESERVE_DEPRECIATION_PCT",
+        "VAULT_LAYER_COUNT",
+        "VAULT_SCORE",
+        "VAULT_VERDICT",
+        "VAULT_PENETRATION_PCT",
+        "VAULT_WEAKEST",
+        "VAULT_ZONE_COUNT",
+        "VAULT_MIN_EFFORT",
+        "VAULT_HARDENED_EFFORT",
+        "VAULT_EFFORT_RAISED",
+        "VAULT_WEAK_PATH_EDGES",
+        "VAULT_CRITICAL_EDGES",
+        "LASER_BURN_THROUGH_S",
+        "LASER_SEVERITY",
+        "LASER_EFFECTIVE_RANGE_M",
+        "LASER_FOCUS_MELT_S",
+        "LASER_RAYLEIGH_RANGE_M",
+    }
+)
+
+#: Computed tokens the text scan provably *cannot* police, with the reason.
+#: A bare small integer ("6") or a common English word ("medium") occurs in
+#: ordinary prose, so searching for it yields false positives rather than
+#: detections. These are stated as an acknowledged hole, not silently dropped:
+#: ``test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects`` keeps the
+#: list honest against the rule, so a value that becomes scannable must be
+#: moved rather than left behind.
+_UNSCANNABLE_RESULT_TOKENS: dict[str, str] = {
+    "GOLDFINGER_MODULE_COUNT": "bare small integer",
+    "GOLDFINGER_FIGURE_COUNT": "bare small integer",
+    "GOLDFINGER_TOKEN_COUNT": "bare small integer",
+    "MARKET_CONVERGED": "boolean word",
+    "VAULT_LAYER_COUNT": "bare small integer",
+    "VAULT_VERDICT": "categorical word",
+    "VAULT_WEAKEST": "layer name, also ordinary prose",
+    "VAULT_ZONE_COUNT": "bare small integer",
+    "VAULT_WEAK_PATH_EDGES": "bare small integer",
+    "VAULT_CRITICAL_EDGES": "bare small integer",
+    "LASER_SEVERITY": "categorical word",
+}
+
+_NUMERIC_LITERAL = re.compile(r"\d*\.?\d+(?:e[+-]?\d+)?", re.IGNORECASE)
+
+
+def _is_scannable(value: str) -> bool:
+    """Can this value be searched for in prose without false positives?
+
+    Only a numeric literal of at least three characters is distinctive enough.
+    Anything shorter, or any word, occurs naturally in English text.
+    """
+    return len(value) >= 3 and _NUMERIC_LITERAL.fullmatch(value) is not None
+
+
+def _scanned_result_tokens(variables: dict[str, str]) -> tuple[str, ...]:
+    return tuple(
+        sorted(token for token in _COMPUTED_RESULT_TOKENS if _is_scannable(variables[token]))
+    )
 
 
 def _prose_without_tokens() -> str:
-    sections = sorted(_PKG_ROOT.glob("manuscript/[0-9]*.md"))
-    assert sections, "expected numbered manuscript sections to exist"
+    sections = manuscript_prose_paths(_PKG_ROOT)
+    assert sections, "expected rendered manuscript files to exist"
     joined = "\n".join(section.read_text(encoding="utf-8") for section in sections)
     return re.sub(r"\{\{[A-Z0-9_]+\}\}", " ", joined)
+
+
+def test_every_token_is_classified_exactly_once() -> None:
+    """The partition must cover the token map with no overlap and no gap."""
+    declared = set(GOLDFINGER_TOKENS)
+    parts = (_IDENTITY_TOKENS, _INPUT_TOKENS, _COMPUTED_RESULT_TOKENS)
+    union: set[str] = set()
+    for part in parts:
+        assert not (union & part), f"token classified twice: {sorted(union & part)}"
+        union |= part
+    assert union == declared, (
+        f"unclassified tokens: {sorted(declared - union)}; "
+        f"classified but not generated: {sorted(union - declared)}"
+    )
+
+
+def test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects() -> None:
+    """The stated hole matches the mechanical rule — no quiet exemptions."""
+    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    rejected = {token for token in _COMPUTED_RESULT_TOKENS if not _is_scannable(variables[token])}
+    assert rejected == set(_UNSCANNABLE_RESULT_TOKENS), (
+        f"undocumented unscannable tokens: {sorted(rejected - set(_UNSCANNABLE_RESULT_TOKENS))}; "
+        f"documented but now scannable: {sorted(set(_UNSCANNABLE_RESULT_TOKENS) - rejected)}"
+    )
+
+
+def test_the_scan_covers_every_scannable_computed_result() -> None:
+    """The scan is the whole computed class minus the documented hole."""
+    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    scanned = set(_scanned_result_tokens(variables))
+    assert scanned == _COMPUTED_RESULT_TOKENS - set(_UNSCANNABLE_RESULT_TOKENS)
+    # Regression guard on the original defect: the gate shipped with 11 tokens
+    # while the computed class was more than twice that size.
+    assert len(scanned) > 11
 
 
 def test_no_computed_result_value_is_hardcoded_in_the_prose() -> None:
     variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
     prose = _prose_without_tokens()
     offenders = [
-        f"{token}={variables[token]}" for token in _RESULT_TOKENS if variables[token] in prose
+        f"{token}={variables[token]}"
+        for token in _scanned_result_tokens(variables)
+        if variables[token] in prose
     ]
     assert not offenders, f"result values hardcoded in manuscript prose: {offenders}"
 
@@ -430,10 +585,32 @@ def test_generated_counts_file_matches_a_fresh_render() -> None:
 
 
 def test_the_anti_hardcode_gate_can_actually_fail() -> None:
-    """Positive control for the gate above — a pasted value must be caught."""
+    """Positive control — every scanned token is individually detectable.
+
+    Pastes each scanned result value into the prose one at a time and asserts
+    the scan reports that token. A token that the scan could never flag (for
+    instance because its value is a substring the stripper removes) would show
+    up here rather than sitting in the list looking like coverage.
+    """
     variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
-    contaminated = _prose_without_tokens() + (
-        f"\nThe vault scores {variables['VAULT_SCORE']} on the composite.\n"
+    base = _prose_without_tokens()
+    scanned = _scanned_result_tokens(variables)
+    assert scanned, "expected at least one scannable computed result"
+    for token in scanned:
+        contaminated = base + f"\nThe report states {variables[token]} for {token}.\n"
+        offenders = [name for name in scanned if variables[name] in contaminated]
+        assert token in offenders, f"the scan cannot detect a pasted {token}"
+
+
+def test_the_anti_hardcode_gate_covers_the_preamble_file() -> None:
+    """Positive control for the widened file set: a paste in the preamble is caught."""
+    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    preamble = _PKG_ROOT / "manuscript" / "preamble.md"
+    assert preamble in manuscript_prose_paths(_PKG_ROOT)
+    contaminated = re.sub(
+        r"\{\{[A-Z0-9_]+\}\}",
+        " ",
+        preamble.read_text(encoding="utf-8")
+        + f"\nBurn-through {variables['LASER_BURN_THROUGH_S']} s.\n",
     )
-    offenders = [token for token in _RESULT_TOKENS if variables[token] in contaminated]
-    assert "VAULT_SCORE" in offenders
+    assert variables["LASER_BURN_THROUGH_S"] in contaminated

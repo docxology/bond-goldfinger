@@ -169,10 +169,44 @@ covered by `tests/test_mission.py`.
 
 ## Data flow and the single source of truth
 
-`manuscript/config.yaml` (`grand_slam:`) mirrors the module `REFERENCE_*`
-constants. The adapter, `manuscript_variables.py`, and `figures/plots.py` all
-read those constants — none of them repeats a literal — so the mission outcome,
-the numbered prose, and the figures cannot disagree. No measured metric appears
-as a literal outside the token pipeline, and a test asserts it
-(`test_no_computed_result_value_is_hardcoded_in_the_prose`, with a positive
-control proving that gate can actually fail).
+The **module `REFERENCE_*` constants are the source of truth.** The adapter,
+`manuscript_variables.py`, and `figures/plots.py` all read those constants —
+none of them repeats a literal — so the mission outcome, the numbered prose,
+and the figures cannot disagree.
+
+`manuscript/config.yaml` (`grand_slam:`) is a *mirror* of those constants for
+human reading. No code path loads it: `load_mission_config` reads the file for
+identity and publication metadata only, and `generate_variables` takes every
+intel value from the imported constants. That mirror was previously described
+as the single source of truth from which "every value is injected", which was
+false — editing `grand_slam.market.reference_price` changed nothing. It is now
+enforced instead of asserted: `tests/test_reference_intel.py` compares the
+block against all six constants key-for-key and value-for-value (including the
+undirected zone graph), and requires the block to declare exactly the six
+sub-blocks, so a new `REFERENCE_*` constant cannot ship unmirrored.
+
+The two laser models are held to one physical target by the same file:
+`REFERENCE_PHYSICS` and `REFERENCE_BEAM` must agree on density, specific heat,
+absorptivity, and power, and the scalar model's `delta_temperature` must equal
+the thermal model's `melt_temp - ambient`.
+
+### What the anti-hardcode gate does and does not cover
+
+`test_no_computed_result_value_is_hardcoded_in_the_prose` scans the rendered
+manuscript files — the numbered sections **and** `preamble.md` — for pasted
+result values. Its scope is defined by a three-way partition of
+`GOLDFINGER_TOKENS` (identity / declared input / computed result) that
+`test_every_token_is_classified_exactly_once` forces to be total, so a new
+token cannot escape classification.
+
+Within the computed class, a token is scanned when its value is a numeric
+literal of at least three characters. Bare small integers (module, figure,
+token, layer, zone, and edge counts) and categorical words (`medium`,
+`serious`, `fence`, `true`) are **not scanned** — searching prose for `6` or
+`medium` produces false positives, not detections. They are enumerated with
+reasons in `_UNSCANNABLE_RESULT_TOKENS`, and
+`test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects` pins that list
+to the rule. So the honest statement is: *no scannable computed result value
+appears as a prose literal, and a per-token positive control proves each of
+those values is detectable; hand-typed counts and category words remain
+unguarded by this scan.*

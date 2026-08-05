@@ -5,8 +5,8 @@
 > regenerate instead. Never copy these numbers into other prose — cite this
 > file or use the manuscript `{{TOKEN}}`.
 
-- Test suite: gated at **0 failures, 0 skipped** (not measured in this run).
-- Coverage on `src/goldfinger/`: gate is **>=90%** line+branch.
+- Test suite: **198 collected**, 0 skipped, 0 failed.
+- Coverage on `src/goldfinger/` (line + branch): **100.00%** (gate: >=90%).
 - Pure domain modules: **6** (`laser_physics`, `laser_thermal`, `market_attack`, `reserve_attack`, `vault_security`, `vault_threat_network`).
 - Manuscript tokens: **67**.
 - Figures: **6** (`market_corner_trajectory`, `reserve_crisis`, `vault_layered_score`, `vault_network`, `laser_burn_through`, `laser_engagement`).
@@ -24,5 +24,5 @@
 | Layered vault score | `VAULT_SCORE` | 0.780 (medium) |
 | Sequential penetration | `VAULT_PENETRATION_PCT` | 0.009% |
 | Minimum intrusion effort | `VAULT_MIN_EFFORT` | 15.20 → 20.20 hardened |
-| Laser burn-through | `LASER_BURN_THROUGH_S` | 0.98 s |
+| Laser burn-through | `LASER_BURN_THROUGH_S` | 0.72 s |
 | Laser effective range | `LASER_EFFECTIVE_RANGE_M` | 65.0 m (Rayleigh 9.36 m) |

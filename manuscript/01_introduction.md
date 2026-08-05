@@ -53,7 +53,10 @@ depend only on the standard library and NumPy, contain no I/O, draw no random
 numbers, and are trivially reproducible. Around them sits a thin mission
 adapter that implements the frozen BOND-API protocol (the suite's canonical
 `MissionProvider` contract), so the model set can be discovered, orchestrated,
-and debriefed uniformly across the 27-film fleet. The adapter's public shape —
+and debriefed uniformly across the film fleet. (The fleet's size is a property
+of the suite, not of this package; it is deliberately not stated here, because
+this package can neither derive it nor gate it without reaching into sibling
+packages. The suite roster is authoritative.) The adapter's public shape —
 the film slug, the five lifecycle methods, and the module-level gadget
 registry — is frozen across phases; only its internals deepen.
 

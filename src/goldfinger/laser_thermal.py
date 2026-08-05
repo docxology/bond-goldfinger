@@ -220,6 +220,12 @@ class _BeamIntel(TypedDict):
 
 
 #: Reference intel — an Nd:YAG-class continuous-wave laser vs a steel plate.
+#:
+#: This is the *same* reference plate as
+#: :data:`goldfinger.laser_physics.REFERENCE_PHYSICS`: ``density`` and
+#: ``specific_heat`` match that module's values, and ``melt_temp - ambient``
+#: equals its ``delta_temperature``. ``tests/test_reference_intel.py`` asserts
+#: the agreement, so the two models cannot describe different steel.
 REFERENCE_BEAM: _BeamIntel = {
     "power": 5000.0,  # W
     "waist": 1.78e-3,  # m — ~1.8 mm focus radius (spot area ~1e-5 m^2)

@@ -2,10 +2,17 @@
 
 ## Reference intel
 
-The deterministic reference parameters used by the pure domain core are
-declared in `manuscript/config.yaml` under `grand_slam:` and mirrored in each
-module's `REFERENCE_*` constant. Every value below is injected from that single
-source of truth, so a change to the intel changes this section automatically.
+The deterministic reference parameters are **declared in the module
+`REFERENCE_*` constants** in `src/goldfinger/`. Those constants are what the
+domain core, the mission adapter, the figures, and the token map all read, and
+every value below is injected from them as a generated variable, so a change to
+the intel changes this section automatically.
+
+`manuscript/config.yaml` carries a human-readable `grand_slam:` mirror of the
+same numbers. Nothing loads that block at runtime — it is documentation, not
+input — so its only guarantee is that
+`tests/test_reference_intel.py` compares it key-for-key and value-for-value
+against the module constants and fails if either side is edited alone.
 
 **Market corner** (`market_attack.REFERENCE_MODEL`) — reference price
 `${{MARKET_REFERENCE_PRICE}}`/oz clearing a normalized floatable-supply index
@@ -40,6 +47,12 @@ against a steel plate of density `{{LASER_DENSITY_KGM3}}` kg/m³ and thickness
 `{{LASER_THICKNESS_MM}}` mm, specific heat `{{LASER_SPECIFIC_HEAT}}` J/(kg·K),
 $\Delta T$ = `{{LASER_DELTA_T_K}}` K, absorptivity `{{LASER_ABSORPTIVITY}}`.
 A beam is classified *serious* at or above `{{LASER_SEVERITY_THRESHOLD_W}}` W.
+This is the *same* plate as the thermal model below: the two modules shipped
+different steel (specific heat 500 vs 460 J/(kg·K), and a $\Delta T$ that did
+not equal that model's melt-minus-ambient span) until the constants were
+reconciled, so $\Delta T$ is now exactly
+`{{LASER_MELT_TEMP_K}}` K − `{{LASER_AMBIENT_K}}` K and
+`tests/test_reference_intel.py` asserts the agreement.
 
 **Laser — thermal** (`laser_thermal.REFERENCE_BEAM`) — an Nd:YAG-class
 continuous-wave beam of wavelength `{{LASER_WAVELENGTH_NM}}` nm focused to a
@@ -56,8 +69,11 @@ not because any sampling occurs. Persisted artifacts carry no wall-clock
 dependence (`wall_time_s = 0.0` in provenance). The one deliberately varying
 value is the `GENERATION_TIMESTAMP` token (currently
 {{GENERATION_TIMESTAMP}}) and the `GOLDFINGER_VERSION_HASH` derived from the
-full token map. Figure output is byte-deterministic for fixed inputs, which
-`tests/test_figures.py` asserts by rendering twice and comparing.
+full token map. Figure output is byte-deterministic for fixed inputs:
+`tests/test_figures.py` renders **every** exported renderer twice — into two
+separate directories and again over the same path — and compares the bytes,
+parametrised over `figures.FIGURE_RENDERERS` so a renderer added later is
+covered without anyone remembering to add it.
 
 ## Software environment
 

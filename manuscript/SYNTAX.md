@@ -2,8 +2,12 @@
 
 This file documents rendering syntax. It is a *reference*, not a rendered
 section — literal `{{VARIABLE}}` and `{#fig:...}` examples here are
-illustrative and are excluded from the live token cross-reference gate (which
-scans only the numbered `[0-9]*.md` sections).
+illustrative and are excluded from the live token cross-reference gate. The
+gate's file set is defined by
+`src/goldfinger/manuscript_variables.py::manuscript_prose_paths()`: the
+numbered `[0-9]*.md` sections **and** `preamble.md`. Guide files (this one,
+`README.md`, `AGENTS.md`) are outside it — which is why a literal placeholder
+is safe here and is not safe in `preamble.md`.
 
 ## Variables
 
@@ -11,7 +15,7 @@ Result and identity metrics are injected with `{{VARIABLE}}` syntax. The
 authoritative set is the return value of
 `src/goldfinger/manuscript_variables.py::generate_variables()`; the live test
 `tests/test_manuscript_variables.py::test_all_manuscript_tokens_are_generated_live`
-gates that every token used in the numbered sections exists.
+gates that every token used in a rendered file exists.
 
 Example: `{{MARKET_PRICE_GAIN_PCT}}`, `{{VAULT_SCORE}}`,
 `{{LASER_BURN_THROUGH_S}}`.
