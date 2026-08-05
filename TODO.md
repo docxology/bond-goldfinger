@@ -1,59 +1,284 @@
-# goldfinger — TODO (GRAND SLAM)
+# TODO — goldfinger (GRAND SLAM)
 
-Film package: Goldfinger (1964), mission codename GRAND SLAM. Local-only tree.
+`goldfinger` is the PROJECT BOND film package for *Goldfinger* (1964), mission
+codename **GRAND SLAM**: six pure, deterministic concept modules across three
+attack surfaces (gold-market corner + speculative peg attack; layered vault
+defence + intrusion-graph hardening; scalar burn-through + Gaussian/conduction
+laser thermal), wrapped by a frozen BOND-API `MissionProvider` adapter, with a
+token-driven manuscript and generated figures. Verified state as of the run that
+produced this file (commit `d5ebb90`, 2026-08-05): **198 tests passed, 0 skipped,
+0 failed; 100.00% line *and* branch coverage on `src/goldfinger/`** measured by
+`uv run pytest tests/ --cov=src --cov-fail-under=90`; `ruff check`, `ruff format
+--check`, and `mypy src/goldfinger scripts` all clean; zero exemplar-lineage
+hits. Local-only tree — no remote, never pushed.
 
-Only *open* work belongs in this file. Completed work is described in
-[`README.md`](README.md) and [`docs/architecture.md`](docs/architecture.md);
-current measured counts are in
-[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md). Do not restate a
-measured figure here — it will rot.
+Do not restate a measured figure in this file; cite
+[`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md). The paragraph above is
+the one exception, and it is dated and pinned to a commit for that reason.
 
-## Open — modelling
+## Open work
 
-- [ ] **Disambiguate `effective_burn_range`'s `0.0` return.** It currently means
-      either "melts only at focus" or "never melts within the window". The
-      docstring says so and callers can disambiguate with
-      `melt_time_at_distance(..., 0.0)`, but a richer return (a small result
-      object carrying `burns_at_focus`) would remove the trap. Deferred because
-      it changes a signature the mission adapter and figures both call.
-- [ ] **Quantise-free effective burn range.** The range is found by scanning a
-      fixed `step` grid, so the answer is quantised to that step. A bisection on
-      the monotone melt-time-vs-distance curve would be exact and faster.
-      Acceptance: same reference answer to within the current step, and a test
-      showing the bisection result is step-independent.
-- [ ] **Optimality gap for `harden_network`.** The greedy allocation is a lower
-      bound on what the budget could buy; the manuscript says so. Adding an
-      exact solve for small graphs (brute force over allocations) would let the
-      package report the actual gap instead of only disclaiming it.
-      Acceptance: a test comparing greedy against exhaustive on the reference
-      graph at a small budget.
-- [ ] **Second-generation currency-crisis variant.** `reserve_attack` implements
-      only the first-generation (Flood–Garber) model, whose attack time is fully
-      deterministic. An Obstfeld-style self-fulfilling variant would let the
-      mission express the multiple-equilibria case. Out of scope until the
-      package needs it; noted so the current limitation is not mistaken for an
-      oversight.
+### Correctness
 
-## Open — packaging and integration
+**C1 — `Provenance.input_hash` is a hand-typed literal, not a fingerprint of the
+inputs.**
+`src/goldfinger/mission.py:372` passes
+`input_hash="goldfinger-grand-slam-input-v2"`. The protocol it satisfies
+documents that field as "a stable fingerprint of the mission inputs so outcomes
+can be audited without re-running the film"
+(`../bond-api/src/bond_api/protocol.py:196`), and bond-api ships the machinery to
+build one: `fingerprint(*parts)` at
+`../bond-api/src/bond_api/capabilities.py:148` and `derive_provenance(...)` at
+`:181`. Consequence today: editing any `REFERENCE_*` constant changes every
+result in `outcome.results` while `input_hash` stays byte-identical, so an
+auditor comparing two provenance records concludes the inputs did not move. The
+literal is also hand-maintained (`-v2`), which is exactly the class of value this
+package's doctrine forbids elsewhere.
+*Done:* `input_hash` is derived from the reference intel actually consumed by
+`execute()` (the `REFERENCE_*` mappings the `_*_intel()` helpers read), so two
+runs with the same constants agree and a one-value edit to any constant produces
+a different hash. Only `src/goldfinger/mission.py` changes — the frozen surface
+(module path, class name, `film`, five methods, `GADGETS`,
+`register_market_gadgets`, `build_provider`) is untouched.
+*Demonstrate:* a new test that computes the provenance for the shipped constants,
+recomputes it against a perturbed copy of one constant, and asserts the two
+hashes differ — plus `uv run pytest tests/test_protocol_integration.py -v`.
 
-- [ ] **Provenance persistence via bond-utilities.** Outcome provenance uses
-      `bond_api.Provenance` directly. A later phase may delegate persistence to
-      `bond_utilities.mission_io.record_provenance_outcome` once bond-utilities
-      is converted at this level. Acceptance: `record_provenance_outcome` writes
-      a GRAND SLAM record under `output/data/`.
-- [ ] **Publisher metadata.** `CITATION.cff`, `.zenodo.json`, and
-      `codemeta.json` are prose-grade and deliberately omit DOIs and repository
-      URLs, because this is a local-only tree with no remote and a fabricated
-      DOI would be worse than none. Populate real values only if a publication
-      target is authorised.
-- [ ] **`COUNTS.md` measured lines.** The committed file states the enforced
-      gate rather than a measured test count, because no automation reruns the
-      gate on commit. `scripts/z_generate_counts.py --tests N --coverage PCT`
-      fills those lines when a gated run supplies real numbers; wiring that into
-      a pre-commit step would let the file carry measurements safely.
+**C2 — `effective_burn_range` returns a two-valued `0.0`.**
+`src/goldfinger/laser_thermal.py:153-204`; the ambiguity is stated in the
+docstring at `:173-178` and repeated as a trap in
+`docs/agent_instructions.md:110-111`. `0.0` means either "melts only at the focal
+point" or "never melts anywhere in the window"; callers must disambiguate by
+re-calling `melt_time_at_distance(..., 0.0)`. Deferred because a richer return
+changes a signature that both `mission.py` (`_laser_thermal_intel`) and
+`figures/plots.py` (`plot_laser_engagement`) call.
+*Done:* the function returns a value that carries `burns_at_focus` alongside the
+range (a small frozen result object, mirroring `market_attack.CornerResult`),
+both call sites are updated, and no caller needs a second call to interpret
+`0.0`.
+*Demonstrate:* `uv run pytest tests/test_laser_thermal.py tests/test_mission.py
+tests/test_figures.py -v` with a test asserting the focus-only and
+never-melts cases are now distinguishable without a second call.
 
-## Not in scope
+### Verification
 
-- No remote push, no sibling-package changes, no template-repo changes.
-- No change to the frozen `mission.py` public surface or the `GADGETS`
-  convention — the fleet consumes them (see [`AGENTS.md`](AGENTS.md)).
+**V1 — the provenance determinism test cannot fail on `input_hash`.**
+`tests/test_protocol_integration.py:90-95`
+(`test_deterministic_provenance`) asserts `o1.provenance.input_hash ==
+o2.provenance.input_hash`. While C1 stands, that compares a module-level string
+constant with itself: it is green by construction and would stay green if the
+mission became nondeterministic. It reads as coverage of a determinism claim it
+does not bind.
+*Done:* the assertion compares a hash that varies with the inputs (C1), and the
+test ships a positive control showing a perturbed input turns it red.
+*Demonstrate:* `uv run pytest tests/test_protocol_integration.py::test_deterministic_provenance -v`,
+plus the negative-control test from C1.
+
+**V2 — the measured lines of `docs/_generated/COUNTS.md` are ungated.**
+`docs/_generated/COUNTS.md:7-8` carries `**198 collected**` and `**100.00%**`.
+The staleness gate,
+`tests/test_guards_and_contracts.py::test_generated_counts_file_matches_a_fresh_render`,
+compares only lines beginning `- Pure domain modules`, `- Manuscript tokens`,
+`- Figures`, or `|` — the two measured lines are excluded by construction,
+because a bare regeneration legitimately omits them. So adding a single test
+leaves `198` in a committed file with nothing able to notice. The numbers are
+correct today (measured this session); the *gate* is the gap, not the values.
+*Done:* either the committed measured lines are re-derived and compared by
+something that runs on every gated run (e.g. the gate writes the count and the
+test compares against the live collection count), or the measured lines are
+dropped from the committed artifact and the file states the gate only.
+*Demonstrate:* add a throwaway test, run
+`uv run pytest tests/ --cov=src --cov-fail-under=90`, and observe a failure that
+names `COUNTS.md`; remove the throwaway test and the suite is green again.
+
+**V3 — 11 computed result tokens cannot be policed by the anti-hardcode scan.**
+*(carried over from the audit — unresolved.)*
+`tests/test_guards_and_contracts.py::_UNSCANNABLE_RESULT_TOKENS` enumerates
+`GOLDFINGER_MODULE_COUNT`, `GOLDFINGER_FIGURE_COUNT`, `GOLDFINGER_TOKEN_COUNT`,
+`VAULT_LAYER_COUNT`, `VAULT_ZONE_COUNT`, `VAULT_WEAK_PATH_EDGES`,
+`VAULT_CRITICAL_EDGES` (bare small integers) and `MARKET_CONVERGED`,
+`VAULT_VERDICT`, `VAULT_WEAKEST`, `LASER_SEVERITY` (category/boolean words).
+Searching prose for `6` or `medium` returns false positives, not detections, so
+no sound substring gate exists. The hole is pinned to the mechanical rule by
+`test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects` and disclosed in
+`manuscript/03_results.md:91-102`, `manuscript/06_reproducibility.md`,
+`docs/architecture.md:193-212`, and `AGENTS.md:74-83`. A hand-typed module count
+in prose is still not caught.
+*Done:* a gate that does not rely on substring search — e.g. rendering each
+numbered section from its `{{TOKEN}}` source and diffing against the committed
+prose, so *any* literal standing where a token should be is detected regardless
+of its length or word-likeness. If that is judged not worth the machinery, the
+honest close is to move this to Known limitations rather than leave it open.
+*Demonstrate:* paste `6` in place of `{{GOLDFINGER_MODULE_COUNT}}` in
+`manuscript/03_results.md` and see `uv run pytest tests/test_guards_and_contracts.py -v`
+go red; restore the token and it goes green.
+
+**V4 — counts of things outside this package have no producer and no gate.**
+*(carried over from the audit — unresolved.)*
+The prose formerly said "across the 27-film fleet". The number was accurate but
+hand-authored: no token, no producer, no test. It was removed rather than
+derived — `manuscript/01_introduction.md:56` now says the fleet's size is a
+property of the fleet, and the prohibition is written into
+`manuscript/AGENTS.md:21`, `AGENTS.md:82-83`, and
+`docs/agent_instructions.md:60-61`. Deriving one would require this package to
+read sibling packages or the suite roster, which its own scope rules forbid, so
+the rule currently rests on doctrine and review.
+*Done:* a lexical gate that rejects a fleet/sibling-package count reappearing in
+`manuscript/` prose (a pattern check over number-plus-fleet-noun constructions
+is feasible where a value check is not), with a positive control that pastes one
+back in and sees it caught. If judged infeasible, close it by moving to Known
+limitations with that reasoning stated.
+*Demonstrate:* paste `across the 27-film fleet` into
+`manuscript/01_introduction.md`, run `uv run pytest tests/ -k manuscript -v`,
+expect a failure naming the offending phrase.
+
+**V5 — the greedy hardening "lower bound" claim is disclaimed, not measured.**
+`src/goldfinger/vault_threat_network.py:202-262` allocates budget greedily.
+`manuscript/07_scope_and_related_work.md:31-35` states the allocation "is not
+guaranteed optimal — it is reported as a lower bound on achievable effort lift",
+and no test compares it to anything, so the gap between greedy and optimal is
+unknown rather than bounded.
+*Done:* an exhaustive allocation over the reference graph at a small budget,
+asserting greedy ≤ exhaustive, with the observed gap reported (0 or otherwise)
+so the manuscript can state a measured gap instead of a disclaimer.
+*Demonstrate:* `uv run pytest tests/test_vault_threat_network.py -k optimal -v`.
+
+### Documentation
+
+**D1 — two doc call sites regenerate `COUNTS.md` without the measurement flags.**
+`README.md:99` (`uv run python scripts/z_generate_counts.py   # docs/_generated/COUNTS.md`)
+and `docs/AGENTS.md:54`
+(`uv run python scripts/z_generate_counts.py   # if anything structural moved`)
+show the bare invocation. Running it as written replaces the committed measured
+lines with "not measured in this run" — proven by
+`tests/test_guards_and_contracts.py::test_counts_document_reports_the_gate_when_nothing_was_measured`
+against the committed file's current contents — silently downgrading a committed
+artifact and leaving a dirty tree. `AGENTS.md:31`,
+`docs/agent_instructions.md:93`, and `docs/testing_philosophy.md:106` all use the
+correct `--tests <N> --coverage <PCT>` form.
+*Done:* both sites carry the flagged form, or state explicitly that the bare form
+drops the measurements.
+*Demonstrate:* `rg -n "z_generate_counts.py" README.md docs/ AGENTS.md` shows no
+bare invocation without an adjacent warning.
+
+**D2 — stale example count in the counts-generator docstring.**
+`scripts/z_generate_counts.py:13` shows
+`uv run python scripts/z_generate_counts.py --tests 151 --coverage 100.0`. `151`
+was this package's test count at phase 5 and reads as the current one; it is not.
+*Done:* the docstring example uses placeholders (`--tests <N> --coverage <PCT>`)
+like every other doc site, so no number in it can rot.
+*Demonstrate:* `rg -n "tests 1[0-9][0-9]" scripts/` returns nothing.
+
+### Extension
+
+**E1 — quantise-free effective burn range.**
+`src/goldfinger/laser_thermal.py:153-204` scans `0..max_distance` on a fixed
+`step` grid (default 1.0 m), so the answer is quantised to that step and costs
+`max_distance/step` melt-time evaluations. Melt time is monotone in distance, so
+a bisection would be exact and cheaper.
+*Done:* bisection replaces the scan, reproducing the current reference answer to
+within the present step, and a test shows the result no longer moves when the
+tolerance is tightened (the current implementation does move when `step`
+changes). `manuscript/07_scope_and_related_work.md:44-46` — which states the
+quantisation as a limitation — is updated in the same change.
+*Demonstrate:* `uv run pytest tests/test_laser_thermal.py -k range -v`.
+
+**E2 — second-generation currency-crisis variant.**
+`src/goldfinger/reserve_attack.py` implements only the first-generation
+(Flood–Garber) model, whose attack time is fully deterministic;
+`manuscript/07_scope_and_related_work.md:17-23` states the omission. An
+Obstfeld-style self-fulfilling variant would let the mission express the
+multiple-equilibria case. Out of scope until the mission needs it — recorded so
+the current single model is not mistaken for an oversight.
+*Done:* a second module (or a second entry point) that reports more than one
+equilibrium for a parameterisation where the first-generation model reports one,
+with the scope paragraph and `99_references.md` updated.
+*Demonstrate:* `uv run pytest tests/ -k equilibri -v`.
+
+**E3 — provenance persistence via bond-utilities.**
+`src/goldfinger/mission.py:369-374` constructs `bond_api.Provenance` inline and
+persists nothing. `bond-utilities` already ships the persistence surface:
+`record_provenance_outcome` at
+`../bond-utilities/src/bond_utilities/mission_io.py:153`, with `save_record`,
+`verify_provenance`, and `load_records` alongside. Blocked on bond-utilities
+being converted at this level; taking the dependency now would put an I/O import
+into the adapter ahead of the fleet.
+*Done:* a GRAND SLAM record written under `output/data/` by
+`record_provenance_outcome` and read back by `verify_provenance`, with the
+concept core still importable without `bond-api` or `bond-utilities`.
+*Demonstrate:* `uv run python scripts/execute.py && ls output/data/` shows the
+record, and `uv run pytest tests/test_mission.py -v` stays green.
+
+## Known limitations (not bugs)
+
+- **Publisher metadata carries no DOI and no repository URL.** `CITATION.cff`,
+  `.zenodo.json` (`codeRepository: null` in `codemeta.json`) deliberately omit
+  them: this is a local-only tree with no remote, and a fabricated DOI is worse
+  than none. `tests/test_package_metadata.py` asserts their *absence*, so this is
+  an enforced decision rather than an unfinished field. Populate real values only
+  if a publication target is authorised.
+- **`manuscript/config.yaml`'s `grand_slam:` block is a mirror, not a source.**
+  No code path loads it; the module `REFERENCE_*` constants are the source of
+  truth. The audit found this block described as "the single source of truth from
+  which every value is injected", which was false. The claim was corrected rather
+  than the mechanism inverted, and `tests/test_reference_intel.py` now pins the
+  mirror to all six constants key-for-key (including the undirected zone graph)
+  and requires the block to declare exactly the six sub-blocks — so it cannot
+  drift, but it still is not what the code reads.
+- **The anti-hardcode claim is scoped, not absolute.** The honest statement, now
+  carried in `docs/architecture.md:193-212` and `manuscript/03_results.md:91-102`, is:
+  *no **scannable** computed result value appears as a prose literal, and a
+  per-token positive control proves each such value is detectable; hand-typed
+  counts and category words remain unguarded by this scan.* The audit forced the
+  softening; V3 is the open work to remove the caveat, and until it lands the
+  scope above is the claim.
+- **There is no `manuscript/config.yaml.example`.** One existed, was advertised
+  as a "reference copy of the configurable surface", raised `ScannerError` on
+  load, and declared a stale version. It was deleted rather than repaired;
+  `tests/test_reference_intel.py::test_every_yaml_file_under_manuscript_parses`
+  stops the class from returning.
+- **Model scope boundaries are stated, not defects.** Constant-elasticity demand
+  with no microstructure; linear first-generation crisis dynamics; independent
+  vault layers; static, symmetric, fully-known intrusion graph; energy-balance
+  laser with no plasma shielding or latent heat; semi-infinite-solid thermal
+  model with temperature-independent properties. All enumerated in
+  `manuscript/07_scope_and_related_work.md`. These are the modelling contract.
+- **The mission records `wall_time_s=0.0`.** Deliberate: no wall-clock value may
+  enter a persisted result, because it would make the outcome non-reproducible.
+  Determinism beats instrumentation here.
+- **Scope is exactly this directory.** No remote push, no sibling-package edits,
+  no template-repo edits. The `mission.py` public surface and the `GADGETS`
+  convention are frozen — the fleet consumes them (`AGENTS.md:56-64`).
+
+## Verification
+
+Run from the package root; read the output, not just the exit code.
+
+```bash
+uv sync --extra dev                                    # deps incl. the bond-api path dependency
+
+uv run pytest tests/ --cov=src --cov-fail-under=90     # the gate
+uv run ruff check src/ scripts/ tests/
+uv run ruff format --check src/ scripts/ tests/
+uv run mypy src/goldfinger scripts
+rg -n "template[_]code_project" .                      # expect zero hits
+```
+
+Expected: every test passes with zero skips and zero failures; coverage on
+`src/goldfinger/` is at or above the 90% line-and-branch floor (it currently sits
+well above it — see [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md));
+ruff reports "All checks passed!" and all files already formatted; mypy reports
+no issues; the lineage grep returns nothing.
+
+After any structural change, regenerate the derived artifacts and confirm the
+tree is clean:
+
+```bash
+uv run python scripts/z_generate_manuscript_variables.py       # tokens + figures
+uv run python scripts/z_generate_counts.py --tests <N> --coverage <PCT>
+git status
+```
+
+Pass the *measured* `<N>` and `<PCT>` from the gated run above — omitting them
+rewrites `docs/_generated/COUNTS.md` to state the gate instead of the
+measurement (see D1).
