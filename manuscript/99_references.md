@@ -1,9 +1,14 @@
 # References
 
-Walras [1] formalized the tatonnement price-adjustment process that underpins
-the market-cornering model; Hicks [2] provides the constant-elasticity demand
-to which a sterile supply shock is applied. Veil and Rungta [3] describe the
-layered defense-in-depth scoring and product-rule penetration probabilities
-used by the vault assessment. Steen and Mazumder [4] give the continuous-wave
-laser energy-balance model from which burn-through time is derived. The
-mission-adapter contract follows the frozen BOND-API protocol [5].
+Krugman [6] and Flood & Garber [7] establish the first-generation
+speculative-attack model that underpins the reserve-attack front: credit
+growth drains a fixed peg's reserves, and the attack lands the moment the
+shadow floating rate crosses parity. The market-cornering model draws on the
+constant-elasticity demand and tatonnement price-adjustment framework of
+Walras [1] and Hicks [2]. Veil and Rungta [3] describe the layered
+defense-in-depth scoring; the network penetration and hardening model applies
+Dijkstra's shortest-path algorithm [8] to the vault zone graph, following the
+shortest-path interdiction framework of Israeli and Wood [10]. Laser
+penetration uses the energy-balance model of Steen and Mazumder [4] and the
+Carslaw–Jaeger constant-flux heat-conduction solution [9]. The mission-adapter
+contract follows the frozen BOND-API protocol [5].

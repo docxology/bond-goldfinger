@@ -19,8 +19,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))  # noqa: E4
 
 from goldfinger.figures import (  # noqa: E402
     plot_laser_burn_through,
+    plot_laser_engagement,
     plot_market_corner_trajectory,
+    plot_reserve_crisis,
     plot_vault_layered_score,
+    plot_vault_network,
 )
 from goldfinger.manuscript_variables import generate_variables  # noqa: E402
 
@@ -39,8 +42,11 @@ def main() -> int:
     figures_dir = _PROJECT_ROOT / "output" / "figures"
     figure_paths = (
         plot_market_corner_trajectory(figures_dir),
+        plot_reserve_crisis(figures_dir),
         plot_vault_layered_score(figures_dir),
+        plot_vault_network(figures_dir),
         plot_laser_burn_through(figures_dir),
+        plot_laser_engagement(figures_dir),
     )
 
     print(f"wrote {json_path}")

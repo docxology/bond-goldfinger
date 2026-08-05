@@ -16,17 +16,37 @@ matplotlib.use("Agg")  # headless rendering; no display window
 import matplotlib.pyplot as plt  # noqa: E402
 
 from goldfinger.laser_physics import REFERENCE_PHYSICS, burn_through_time
+from goldfinger.laser_thermal import (
+    REFERENCE_BEAM,
+    melt_time_at_distance,
+    rayleigh_range,
+)
 from goldfinger.market_attack import REFERENCE_MODEL, simulate_corner
+from goldfinger.reserve_attack import (
+    REFERENCE_ATTACK,
+    attack_time,
+    reserve_floor_time,
+    simulate_reserve_crisis,
+)
 from goldfinger.vault_security import (
     REFERENCE_RATINGS,
     layered_security_score,
     penetration_probability,
 )
+from goldfinger.vault_threat_network import (
+    REFERENCE_GRAPH,
+    harden_network,
+    minimum_effort_path,
+    path_effort,
+)
 
 __all__ = [
     "plot_laser_burn_through",
+    "plot_laser_engagement",
     "plot_market_corner_trajectory",
+    "plot_reserve_crisis",
     "plot_vault_layered_score",
+    "plot_vault_network",
 ]
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -135,6 +155,127 @@ def plot_laser_burn_through(output_dir: Path | None = None) -> Path:
     ax.grid(alpha=0.3, which="both")
     fig.tight_layout()
     path = _figure_dir(output_dir) / "laser_burn_through.png"
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+    return path
+
+
+def plot_reserve_crisis(output_dir: Path | None = None) -> Path:
+    """Render the speculative-attack reserve drain and shadow-exchange-rate path."""
+    a = REFERENCE_ATTACK
+    floor = reserve_floor_time(
+        a["parity"], a["foreign_rate"], a["interest_elasticity"], a["credit_0"], a["growth"]
+    )
+    step = 0.5
+    times = tuple(round(i * step, 1) for i in range(int(floor / step) + 1))
+    crisis = simulate_reserve_crisis(
+        times, a["parity"], a["foreign_rate"], a["interest_elasticity"], a["credit_0"], a["growth"]
+    )
+    attack = attack_time(
+        a["parity"], a["foreign_rate"], a["interest_elasticity"], a["credit_0"], a["growth"]
+    )
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.plot(
+        crisis["times"],
+        crisis["reserves"],
+        marker="o",
+        markersize=2,
+        linewidth=1.5,
+        label="Gold reserves (peg)",
+    )
+    ax.axvline(
+        attack, color="crimson", linestyle="--", linewidth=1, label=f"Attack time: {attack:.2f}"
+    )
+    ax.axhline(
+        a["parity"], color="navy", linestyle=":", linewidth=1, label=f"Parity ({a['parity']:.2f})"
+    )
+    ax.set_xlabel("Time (units)")
+    ax.set_ylabel("Reserves (normalised)")
+    ax.set_title("Speculative attack on the gold peg: reserve drain")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    path = _figure_dir(output_dir) / "reserve_crisis.png"
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+    return path
+
+
+def plot_vault_network(output_dir: Path | None = None) -> Path:
+    """Render the vault-zone graph: weak-path edge effort before/after hardening."""
+    source, target = "perimeter", "gold_chamber"
+    effort, weak_path = minimum_effort_path(REFERENCE_GRAPH, source, target)
+    hardening = harden_network(REFERENCE_GRAPH, source, target, budget=10, gain_per_unit=0.5)
+    labels = [f"{a}→{b}" for a, b in zip(weak_path, weak_path[1:], strict=False)]
+    edge_costs = [
+        path_effort(REFERENCE_GRAPH, weak_path[i : i + 2]) for i in range(len(weak_path) - 1)
+    ]
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.bar(labels, edge_costs, color="#3b6ea5", alpha=0.9)
+    ax.axhline(
+        effort,
+        color="crimson",
+        linestyle="--",
+        linewidth=1.5,
+        label=f"Min path effort: {effort:.2f}",
+    )
+    ax.axhline(
+        hardening["min_effort_after"],
+        color="darkgreen",
+        linestyle="--",
+        linewidth=1.5,
+        label=f"After hardening: {hardening['min_effort_after']:.2f}",
+    )
+    ax.set_ylabel("Intrusion effort (edge cost)")
+    ax.set_xlabel("Weak-path zone transition")
+    ax.set_title("Vault network: minimum-effort intrusion path (secret tunnel)")
+    ax.tick_params(axis="x", rotation=30)
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+    path = _figure_dir(output_dir) / "vault_network.png"
+    fig.savefig(path, dpi=160)
+    plt.close(fig)
+    return path
+
+
+def plot_laser_engagement(output_dir: Path | None = None) -> Path:
+    """Render the Gaussian-beam melt-time vs distance (the laser engagement envelope)."""
+    b = REFERENCE_BEAM
+    z_r = rayleigh_range(b["waist"], b["wavelength"])
+    distances = [round(d, 1) for d in range(0, 91, 3)]
+    melt_times = [
+        melt_time_at_distance(
+            b["power"],
+            b["waist"],
+            b["wavelength"],
+            d,
+            b["absorptivity"],
+            b["conductivity"],
+            b["density"],
+            b["specific_heat"],
+            b["melt_temp"],
+            b["ambient"],
+        )
+        for d in distances
+    ]
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    ax.plot(distances, melt_times, marker="o", markersize=3, linewidth=1.5, color="crimson")
+    ax.axhline(
+        b["threat_window"],
+        color="navy",
+        linestyle="--",
+        linewidth=1,
+        label=f"Threat window: {b['threat_window']}s",
+    )
+    ax.axvline(z_r, color="gray", linestyle=":", linewidth=1, label=f"Rayleigh range: {z_r:.1f} m")
+    ax.set_xlabel("Target distance (m)")
+    ax.set_ylabel("Surface melt time (s)")
+    ax.set_title("Laser engagement: defocusing lengthens melt time with range")
+    ax.legend()
+    ax.grid(alpha=0.3, which="both")
+    fig.tight_layout()
+    path = _figure_dir(output_dir) / "laser_engagement.png"
     fig.savefig(path, dpi=160)
     plt.close(fig)
     return path

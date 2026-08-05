@@ -20,8 +20,8 @@ def test_brief_declares_mission(provider: MissionProvider) -> None:
     brief = provider.brief()
     assert brief.codename == "GRAND SLAM"
     assert brief.film == "goldfinger"
-    assert len(brief.objectives) == 3
-    assert len(brief.assets) == 3
+    assert len(brief.objectives) == 4
+    assert len(brief.assets) == 6
     assert any(c.kind == "determinism" for c in brief.constraints)
 
 
@@ -38,8 +38,11 @@ def test_plan_has_compute_steps(provider: MissionProvider) -> None:
     actions = [step.action for step in plan.steps]
     assert actions == [
         "simulate_market_corner",
+        "simulate_reserve_attack",
         "assess_vault_defense",
+        "assess_vault_network",
         "assess_laser_threat",
+        "assess_laser_thermal",
         "combine_outcome",
     ]
 
@@ -51,7 +54,7 @@ def test_execute_deterministic_outcome(provider: MissionProvider) -> None:
     assert first.success is True
     assert first.provenance.seed >= 0
     assert first.results == second.results
-    assert first.results["steps_completed"] == 4
+    assert first.results["steps_completed"] == 7
 
 
 def test_execute_result_shapes(provider: MissionProvider) -> None:
@@ -66,19 +69,31 @@ def test_execute_result_shapes(provider: MissionProvider) -> None:
     laser = outcome.results["laser"]
     assert laser["burn_through_time_s"] > 0.0
     assert laser["severity"] in {"trivial", "serious", "critical"}
+    # Phase-4 deepened results are present and non-degenerate.
+    reserve = outcome.results["reserve"]
+    assert reserve["attack_time"] > 0.0
+    assert reserve["attack_suddenness"] > 0.0
+    net = outcome.results["vault_network"]
+    assert net["min_effort"] > 0.0
+    assert net["hardened_effort"] > net["min_effort"]
+    thermal = outcome.results["laser_thermal"]
+    assert thermal["effective_burn_range_m"] > 0.0
 
 
 def test_debrief_returns_lessons(provider: MissionProvider) -> None:
     plan = provider.plan(provider.brief())
     debrief = provider.debrief(provider.execute(plan))
-    assert len(debrief.lessons) == 4
+    assert len(debrief.lessons) == 5
     assert all(isinstance(lesson, str) and lesson for lesson in debrief.lessons)
 
 
 def test_gadgets_registered(provider: MissionProvider) -> None:
     assert GADGETS.contains("goldfinger", "market_corner")
+    assert GADGETS.contains("goldfinger", "reserve_attack")
     assert GADGETS.contains("goldfinger", "vault_defense")
+    assert GADGETS.contains("goldfinger", "vault_hardening")
     assert GADGETS.contains("goldfinger", "laser_threat")
+    assert GADGETS.contains("goldfinger", "laser_thermal")
 
 
 def test_register_market_gadgets_is_idempotent() -> None:
@@ -89,8 +104,11 @@ def test_register_market_gadgets_is_idempotent() -> None:
     register_market_gadgets(registry)
     assert set(registry.gadgets_for("goldfinger")) == {
         "market_corner",
+        "reserve_attack",
         "vault_defense",
+        "vault_hardening",
         "laser_threat",
+        "laser_thermal",
     }
 
 

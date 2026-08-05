@@ -1,15 +1,17 @@
 """GRAND SLAM mission provider — the BOND-API adapter for goldfinger.
 
-This module is the *thin adapter* between the pure domain core
-(:mod:`goldfinger.market_attack`, :mod:`goldfinger.vault_security`,
-:mod:`goldfinger.laser_physics`) and the frozen BOND-API mission protocol. It
-implements the five lifecycle stages (brief / recon / plan / execute /
-debrief), registers the mission's gadgets with the ``bond_api.GadgetRegistry``,
-and returns a fully-determined :class:`MissionOutcome` with provenance.
+This module is the *thin adapter* between the pure domain core (six modules:
+``market_attack``, ``reserve_attack``, ``vault_security``,
+``vault_threat_network``, ``laser_physics``, ``laser_thermal``) and the frozen
+BOND-API mission protocol. It implements the five lifecycle stages (brief /
+recon / plan / execute / debrief), registers the mission's gadgets with the
+``bond_api.GadgetRegistry``, and returns a fully-determined
+:class:`MissionOutcome` with provenance.
 
 Discovery contract (see ``bond_api.discovery``): the module is importable at
-top level as ``goldfinger.mission`` exposing a ``MissionProvider`` class
-whose ``film`` matches the slug, so the orchestrator can find it.
+top level as ``goldfinger.mission`` exposing a ``MissionProvider`` class whose
+``film`` matches the slug, so the orchestrator can find it. The public adapter
+shape is stable across phases — only the mission *internals* deepen.
 """
 
 from __future__ import annotations
@@ -36,7 +38,16 @@ from goldfinger.laser_physics import (
     burn_through_time,
     laser_threat_severity,
 )
+from goldfinger.laser_thermal import REFERENCE_BEAM, effective_burn_range, melt_time_at_distance
 from goldfinger.market_attack import REFERENCE_MODEL, price_gain, simulate_corner
+from goldfinger.reserve_attack import (
+    REFERENCE_ATTACK,
+    attack_time,
+    floating_depreciation,
+    reserve_floor_time,
+    reserve_level,
+    shadow_rate,
+)
 from goldfinger.vault_security import (
     REFERENCE_RATINGS,
     layered_security_score,
@@ -44,16 +55,25 @@ from goldfinger.vault_security import (
     vault_security_verdict,
     weakest_layer,
 )
+from goldfinger.vault_threat_network import (
+    REFERENCE_GRAPH,
+    edge_criticality,
+    harden_network,
+    minimum_effort_path,
+)
 
 __all__ = ["MissionProvider", "build_provider", "register_market_gadgets"]
 
 #: Fixed deterministic RNG seed (this mission performs no random draws).
 _SEED = 2026
 #: Package version baked into provenance.
-_SUBPACKAGE_VERSION = "goldfinger.mission/0.1.0"
+_SUBPACKAGE_VERSION = "goldfinger.mission/0.2.0"
 
 #: Gadget registry the mission registers its concept tools into.
 GADGETS: GadgetRegistry = GadgetRegistry()
+
+#: Threat-window used for the laser-severity classification (seconds).
+_LASER_THREAT_WINDOW = 5.0
 
 
 def _corner_intel() -> dict[str, Any]:
@@ -75,8 +95,43 @@ def _corner_intel() -> dict[str, Any]:
     }
 
 
+def _reserve_intel() -> dict[str, Any]:
+    """Compute the deterministic speculative-attack headline numbers."""
+    a = REFERENCE_ATTACK
+    floor = reserve_floor_time(
+        a["parity"], a["foreign_rate"], a["interest_elasticity"], a["credit_0"], a["growth"]
+    )
+    attack = attack_time(
+        a["parity"], a["foreign_rate"], a["interest_elasticity"], a["credit_0"], a["growth"]
+    )
+    return {
+        "attack_time": attack,
+        "reserve_floor_time": floor,
+        "attack_suddenness": floor - attack,  # the model's headline: attack precedes gradual drain
+        "initial_reserves": reserve_level(
+            0.0,
+            a["parity"],
+            a["foreign_rate"],
+            a["interest_elasticity"],
+            a["credit_0"],
+            a["growth"],
+        ),
+        "shadow_at_attack": shadow_rate(
+            attack,
+            a["parity"],
+            a["foreign_rate"],
+            a["interest_elasticity"],
+            a["credit_0"],
+            a["growth"],
+        ),
+        "floating_depreciation": floating_depreciation(
+            a["parity"], a["foreign_rate"], a["interest_elasticity"], a["credit_0"], a["growth"]
+        ),
+    }
+
+
 def _vault_intel() -> dict[str, Any]:
-    """Compute the deterministic vault-defense headline numbers."""
+    """Compute the deterministic layered vault-defense headline numbers."""
     ratings = REFERENCE_RATINGS
     score = layered_security_score(ratings)
     return {
@@ -87,8 +142,25 @@ def _vault_intel() -> dict[str, Any]:
     }
 
 
+def _vault_net_intel() -> dict[str, Any]:
+    """Compute the deterministic network penetration / hardening headline numbers."""
+    source, target = "perimeter", "gold_chamber"
+    effort, path = minimum_effort_path(REFERENCE_GRAPH, source, target)
+    hardening = harden_network(REFERENCE_GRAPH, source, target, budget=10, gain_per_unit=0.5)
+    critical = edge_criticality(REFERENCE_GRAPH, source, target)
+    return {
+        "min_effort": effort,
+        "weak_path": path,
+        "weak_path_edges": len(path) - 1,
+        "hardened_effort": hardening["min_effort_after"],
+        "effort_raised": hardening["effort_raised"],
+        "critical_edge_count": len(critical),
+        "hardening_allocation": hardening["allocation"],
+    }
+
+
 def _laser_intel() -> dict[str, Any]:
-    """Compute the deterministic laser-threat headline numbers."""
+    """Compute the deterministic laser burn-through headline numbers."""
     phys = REFERENCE_PHYSICS
     t_burn = burn_through_time(
         phys["power"],
@@ -106,19 +178,59 @@ def _laser_intel() -> dict[str, Any]:
     }
 
 
+def _laser_thermal_intel() -> dict[str, Any]:
+    """Compute the deterministic Gaussian-beam / heat-conduction headline numbers."""
+    b = REFERENCE_BEAM
+    range_m = effective_burn_range(
+        b["power"],
+        b["waist"],
+        b["wavelength"],
+        b["absorptivity"],
+        b["conductivity"],
+        b["density"],
+        b["specific_heat"],
+        b["melt_temp"],
+        b["ambient"],
+        b["threat_window"],
+    )
+    t_focus = melt_time_at_distance(
+        b["power"],
+        b["waist"],
+        b["wavelength"],
+        0.0,
+        b["absorptivity"],
+        b["conductivity"],
+        b["density"],
+        b["specific_heat"],
+        b["melt_temp"],
+        b["ambient"],
+    )
+    return {
+        "effective_burn_range_m": range_m,
+        "surface_melt_time_at_focus_s": t_focus,
+        "threat_window_s": b["threat_window"],
+        "waist_mm": b["waist"] * 1000.0,
+        "type": "serious" if range_m >= 25.0 else "short-range",
+    }
+
+
 def register_market_gadgets(registry: GadgetRegistry = GADGETS) -> None:
     """Register the mission's gadgets (concept callables) with a registry.
 
-    Registers three opaque gadgets — ``market_corner``, ``vault_defense``, and
-    ``laser_threat`` — exposing the domain functions to the BOND suite.
+    Registers the six concept tools — ``market_corner``, ``reserve_attack``,
+    ``vault_defense``, ``vault_hardening``, ``laser_threat``, and
+    ``laser_thermal`` — exposing the domain functions to the BOND suite.
     Idempotent: re-registration merges/replaces in place.
     """
     registry.register(
         "goldfinger",
         {
             "market_corner": price_gain,
+            "reserve_attack": attack_time,
             "vault_defense": layered_security_score,
+            "vault_hardening": harden_network,
             "laser_threat": burn_through_time,
+            "laser_thermal": effective_burn_range,
         },
     )
 
@@ -133,20 +245,24 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
         register_market_gadgets(GADGETS)
 
     def brief(self) -> MissionBrief:
-        """Declare the GRAND SLAM mission: corner the gold market, assess and
-        neutralise the vault and its laser threat."""
+        """Declare the GRAND SLAM mission: corner the gold market, weaponise the
+        peg, assess and neutralise the vault and its laser threat."""
         return MissionBrief(
             film=self.film,
             codename="GRAND SLAM",
             objectives=(
                 "corner the gold market via a controlled supply shock",
-                "assess Fort Knox-style layered vault defense",
-                "quantify the laser burn-through threat and its defeat",
+                "weaponise the gold peg via a speculative reserve attack",
+                "assess Fort Knox-style layered and network vault defense",
+                "quantify the laser burn-through and thermal engagement threat",
             ),
             assets=(
                 Asset(kind="model", name="market_corner", payload=REFERENCE_MODEL),
+                Asset(kind="model", name="reserve_attack", payload=REFERENCE_ATTACK),
                 Asset(kind="model", name="vault_defense", payload=dict(REFERENCE_RATINGS)),
+                Asset(kind="model", name="vault_network", payload=REFERENCE_GRAPH),
                 Asset(kind="model", name="laser_threat", payload=REFERENCE_PHYSICS),
+                Asset(kind="model", name="laser_thermal", payload=REFERENCE_BEAM),
             ),
             constraints=(
                 Constraint(kind="determinism", detail="no random draws, no external calls"),
@@ -155,18 +271,18 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
         )
 
     def recon(self, request: ReconRequest) -> ReconReport:
-        """Survey the request, the three models, and the determinism constraint."""
+        """Survey the request, the six models, and the determinism constraint."""
         return ReconReport(
             findings=(
                 Finding(label="goal", detail=request.goal),
-                Finding(label="models", detail="market_corner, vault_defense, laser_threat"),
+                Finding(label="models", detail="six GRAND SLAM concept models"),
                 Finding(label="determinism", detail="fixed seed, zero wall-clock dependence"),
                 Finding(label="scope", detail="goldfinger package only"),
             )
         )
 
     def plan(self, brief: MissionBrief) -> MissionPlan:
-        """Plan the four deterministic compute steps."""
+        """Plan the seven deterministic compute steps."""
         return MissionPlan(
             steps=(
                 Step(
@@ -175,14 +291,29 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
                     params={"model": brief.assets[0].name},
                 ),
                 Step(
+                    name="reserve",
+                    action="simulate_reserve_attack",
+                    params={"model": brief.assets[1].name},
+                ),
+                Step(
                     name="vault",
                     action="assess_vault_defense",
-                    params={"model": brief.assets[1].name},
+                    params={"model": brief.assets[2].name},
+                ),
+                Step(
+                    name="vault_network",
+                    action="assess_vault_network",
+                    params={"model": brief.assets[3].name},
                 ),
                 Step(
                     name="laser",
                     action="assess_laser_threat",
-                    params={"model": brief.assets[2].name},
+                    params={"model": brief.assets[4].name},
+                ),
+                Step(
+                    name="laser_thermal",
+                    action="assess_laser_thermal",
+                    params={"model": brief.assets[5].name},
                 ),
                 Step(
                     name="synthesis",
@@ -195,13 +326,19 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
     def execute(self, plan: MissionPlan) -> MissionOutcome:
         """Run the plan's compute steps and return a deterministic outcome."""
         corner = _corner_intel()
+        reserve = _reserve_intel()
         vault = _vault_intel()
+        vault_net = _vault_net_intel()
         laser = _laser_intel()
+        laser_thermal = _laser_thermal_intel()
         results: dict[str, Any] = {
             "steps_completed": len(plan.steps),
             "corner": corner,
+            "reserve": reserve,
             "vault": vault,
+            "vault_network": vault_net,
             "laser": laser,
+            "laser_thermal": laser_thermal,
             "all_converged": corner["trajectory"][-1] == corner["shocked_price"],
         }
         return MissionOutcome(
@@ -210,7 +347,7 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
             provenance=Provenance(
                 package_version=_SUBPACKAGE_VERSION,
                 seed=_SEED,
-                input_hash="goldfinger-grand-slam-input-v1",
+                input_hash="goldfinger-grand-slam-input-v2",
                 wall_time_s=0.0,
             ),
         )
@@ -221,9 +358,10 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
             outcome=outcome,
             lessons=(
                 "a corner raises price by (S0/S_eff)^(1/eta) at constant elasticity",
-                "defense-in-depth penetration probability is the product of pass-through rates",
-                "burn-through time scales linearly with plate thickness and material heat load",
-                "pure deterministic models keep the mission reproducible local-first",
+                "a gold peg is drained by credit growth; the attack lands at shadow-rate parity",
+                "network hardening raises the intruder's minimum effort on the weak path",
+                "defocusing shortens effective burn range; surface melting follows Carslaw-Jaeger",
+                "six pure deterministic models keep the mission reproducible local-first",
             ),
         )
 

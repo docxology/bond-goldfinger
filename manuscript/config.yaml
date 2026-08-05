@@ -64,3 +64,38 @@ grand_slam:
     specific_heat: 500.0        # J/(kg K)
     delta_temperature: 1500.0   # K
     absorptivity: 0.6
+  reserve_attack:
+    parity: 1.0                 # units home currency per unit gold (fixed peg)
+    foreign_rate: 0.02          # foreign interest rate
+    interest_elasticity: 8.0    # alpha: money-demand semi-elasticity
+    credit_0: 0.10              # initial domestic credit (fraction of money)
+    growth: 0.10                # domestic-credit growth rate
+  laser_beam:
+    power: 5000.0               # W
+    waist: 0.00178              # m — ~1.8 mm focus radius
+    wavelength: 1.064e-6        # m — Nd:YAG
+    absorptivity: 0.6
+    conductivity: 45.0          # W/(m K) steel
+    density: 7800.0             # kg/m^3
+    specific_heat: 460.0        # J/(kg K)
+    melt_temp: 1500.0           # K
+    ambient: 300.0              # K
+    threat_window: 5.0          # s — "serious" melt window
+  vault_network:
+    source: "perimeter"
+    target: "gold_chamber"
+    budget: 10                  # hardening budget units
+    gain_per_unit: 0.5          # effort gained per hardening unit
+    edges:
+      perimeter-compound: 2.0
+      compound-fence: 1.5
+      compound-yard: 3.5
+      fence-yard: 1.2
+      fence-guardpost: 4.0
+      yard-guardpost: 2.0
+      guardpost-vault_exterior: 3.0
+      guardpost-secret_tunnel: 6.0
+      vault_exterior-vault_door: 4.0
+      vault_door-lock_room: 5.0
+      lock_room-gold_chamber: 6.0
+      secret_tunnel-gold_chamber: 2.5

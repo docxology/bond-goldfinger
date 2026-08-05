@@ -6,8 +6,11 @@ from pathlib import Path
 
 from goldfinger.figures import (
     plot_laser_burn_through,
+    plot_laser_engagement,
     plot_market_corner_trajectory,
+    plot_reserve_crisis,
     plot_vault_layered_score,
+    plot_vault_network,
 )
 
 
@@ -46,3 +49,21 @@ def test_default_figure_dir_created(tmp_path: Path) -> None:
     path = plot_laser_burn_through(nested)
     assert path.parent == nested
     assert path.exists()
+
+
+def test_reserve_crisis_figure(tmp_path: Path) -> None:
+    path = plot_reserve_crisis(tmp_path)
+    assert path.name == "reserve_crisis.png"
+    assert path.stat().st_size > 1000
+
+
+def test_vault_network_figure(tmp_path: Path) -> None:
+    path = plot_vault_network(tmp_path)
+    assert path.name == "vault_network.png"
+    assert path.stat().st_size > 1000
+
+
+def test_laser_engagement_figure(tmp_path: Path) -> None:
+    path = plot_laser_engagement(tmp_path)
+    assert path.name == "laser_engagement.png"
+    assert path.stat().st_size > 1000

@@ -25,7 +25,10 @@ prose as `@fig:label` (narrative) or `[@fig:label]` (parenthetical).
 |---|---|
 | `fig:corner` | `output/figures/market_corner_trajectory.png` |
 | `fig:vault` | `output/figures/vault_layered_score.png` |
+| `fig:vault_net` | `output/figures/vault_network.png` |
+| `fig:reserve_crisis` | `output/figures/reserve_crisis.png` |
 | `fig:laser` | `output/figures/laser_burn_through.png` |
+| `fig:laser_engagement` | `output/figures/laser_engagement.png` |
 
 ## Citations
 

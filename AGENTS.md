@@ -13,14 +13,23 @@ never touch sibling packages, bond root files, or the template repo.
 
 | Surface | Rule |
 |---|---|
-| `src/goldfinger/market_attack.py`, `vault_security.py`, `laser_physics.py` | **Pure domain core**: no I/O, no bond-api, no infrastructure imports; deterministic; importable standalone |
-| `src/goldfinger/mission.py` | Thin BOND-API adapter: the only module that imports `bond_api`; implements `MissionProvider` (brief/recon/plan/execute/debrief); registers gadgets |
-| `src/goldfinger/manuscript_variables.py`, `figures/` | Result-token hydration + figure rendering; deterministic |
+| `src/goldfinger/market_attack.py`, `reserve_attack.py`, `vault_security.py`, `vault_threat_network.py`, `laser_physics.py`, `laser_thermal.py` | **Pure domain core** (six modules, three axes): no I/O, no bond-api, no infrastructure imports; deterministic; importable standalone |
+| `src/goldfinger/mission.py` | Thin BOND-API adapter: the only module that imports `bond_api`; implements `MissionProvider` (brief/recon/plan/execute/debrief); registers six gadgets |
+| `src/goldfinger/manuscript_variables.py`, `figures/` | Result-token hydration + six-figure rendering; deterministic |
 | `scripts/` | Thin CLIs per mission phase; sys.path bootstrap `# noqa: E402` |
 
 The pure core must remain importable **without** bond-api so the package keeps
 working if the path dependency ever fails; keep bond-api imports confined to
 `mission.py`.
+
+## Protocol stability (deepen inside, never break the surface)
+
+The adapter's **public shape is frozen across phases**: `film`, the five
+lifecycle methods, the module-level `GADGETS` registry, and the
+`register_market_gadgets` hook must stay unchanged because bond-cli, the
+coordinator reconcile, and the orchestrator consume them across the fleet.
+Deepening happens *inside* — new concept modules, richer assets/plan/outcome
+results — never in the discovery contract (`goldfinger.mission.MissionProvider`).
 
 ## Protocol integration
 
@@ -41,7 +50,7 @@ working if the path dependency ever fails; keep bond-api imports confined to
 - Zero leftover exemplar-lineage placeholder strings (aim zero; see TODO). When
   documenting the lineage grep, bracket-split the pattern so docs don't trip
   their own gate.
-- Update README/AGENTS/TODO for THIS package (done in phase 2).
+- Update README/AGENTS/TODO for THIS package (kept current through phase 4).
 
 ## Quality gates
 

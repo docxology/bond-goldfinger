@@ -33,7 +33,7 @@ def test_full_mission_flow_via_run_mission() -> None:
     provider = build_provider()
     debrief = run_mission(provider, ReconRequest(goal="assess GRAND SLAM target"))
     assert debrief.outcome.success is True
-    assert debrief.outcome.results["steps_completed"] == 4
+    assert debrief.outcome.results["steps_completed"] == 7
     assert len(debrief.lessons) >= 1
 
 

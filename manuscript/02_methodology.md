@@ -63,3 +63,56 @@ $$t_\mathrm{burn} = \frac{\rho A d c \Delta T}{a P}.$$
 
 The same relation inverts for required power and for maximum burnable
 thickness, so any pair of (power, time, thickness) determines the third.
+
+## Macroeconomic attack: speculative attack on the gold peg
+
+The phase-4 deepening adds the monetary-system front. Money demand is linear
+in the interest rate, $m_t - p_t = -\alpha i_t$; purchasing-power parity and
+uncovered interest parity link the price level and interest rate to the
+exchange rate. With domestic credit growing exponentially,
+$D_t = D_0 e^{\mu t}$, the fixed peg forces reserves to drain,
+
+$$R_t = (\bar{S} - \alpha i^\ast) - D_0 e^{\mu t},$$
+
+while the rational-expectations **shadow floating rate** (the rate that would
+prevail once reserves are gone) is
+
+$$\tilde{s}_t = \frac{D_0 e^{\mu t}}{1 - \alpha\mu} + \alpha i^\ast.$$
+
+Under perfect foresight speculators attack exactly when the shadow rate
+crosses the fixed parity, at
+
+$$t^\ast = \frac{1}{\mu}\ln\frac{(1-\alpha\mu)(\bar{S} - \alpha i^\ast)}{D_0},$$
+
+which precedes the gradual reserve-exhaustion time
+$t_B = (1/\mu)\ln((\bar{S}-\alpha i^\ast)/D_0)$ — the attack is sudden. The
+post-float depreciation is the shadow rate at $t_B$ relative to parity.
+
+## Network vault defense: penetration and hardening
+
+The layered ratings in the previous section measure *strength*; the network
+model treats the vault as an undirected weighted graph of zones with
+intrusion-effort edges. The intruder's **minimum-effort path** (Dijkstra) from
+the perimeter to the gold chamber, and the **edge criticality** (how much
+removing each edge raises that minimum), capture where the vault is truly weak
+— here the secret tunnel. Given a hardening budget, a greedy marginal-gain
+allocation raises the edge whose lift most increases the minimum path,
+``gain_per_unit`` per unit, until the budget is spent, maximising the effort
+an intruder must pay.
+
+## Laser thermal engagement: beam focus and heat conduction
+
+The scalar burn-through model ignores beam divergence and conduction. A
+Gaussian beam of waist $w_0$ and wavelength $\lambda$ has Rayleigh range
+$z_R = \pi w_0^2/\lambda$ and spot radius
+$w(z) = w_0\sqrt{1+(z/z_R)^2}$, so absorbed intensity
+$I_a = a P/(\pi w^2)$ falls with range. Under constant flux the surface heats
+by the Carslaw–Jaeger law,
+
+$$T(0,t) = T_\mathrm{amb} + \frac{2 I_a}{\sqrt{\pi k\rho c}}\sqrt{t},$$
+
+giving the melt time $t_\mathrm{melt} = \frac{\pi}{4}\frac{k\rho c
+\,(T_\mathrm{melt}-T_\mathrm{amb})^2}{I_a^2}$. The **effective burn range** is
+the greatest distance at which the defocused beam still melts the target
+within a threat window.
+
