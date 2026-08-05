@@ -27,6 +27,7 @@ The module is pure (no I/O), deterministic, and infrastructure-free.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 
 __all__ = [
@@ -168,10 +169,16 @@ def _positive(value: float, label: str) -> None:
 
 
 def weakest_layer(ratings: Mapping[str, float]) -> str:
-    """Name of the lowest-rated layer (ties broken by :data:`LAYER_ORDER`)."""
+    """Name of the lowest-rated layer (ties broken by :data:`LAYER_ORDER`).
+
+    Only layers that appear in :data:`LAYER_ORDER` are candidates: a rating map
+    whose keys are all outside the traversal order has no weakest layer and
+    raises ``ValueError``. A map in which every layer is rated ``1.0`` is
+    perfectly valid and returns the first layer in :data:`LAYER_ORDER`.
+    """
     _require_layers(ratings)
     weakest: str | None = None
-    weakest_rating = 1.0
+    weakest_rating = math.inf
     for name in LAYER_ORDER:
         if name not in ratings:
             continue
@@ -180,7 +187,7 @@ def weakest_layer(ratings: Mapping[str, float]) -> str:
             weakest_rating = rating
             weakest = name
     if weakest is None:
-        raise ValueError("no rated layers to compare")
+        raise ValueError("no rated layer appears in LAYER_ORDER")
     return weakest
 
 

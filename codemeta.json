@@ -3,10 +3,10 @@
   "@type": "SoftwareSourceCode",
   "name": "goldfinger",
   "identifier": "goldfinger",
-  "description": "PROJECT BOND film package: gold-market cornering model, layered vault defense assessment, and laser threat physics (GRAND SLAM).",
+  "description": "PROJECT BOND film package modelling Goldfinger (1964) as six deterministic, fully-tested scientific modules across three attack surfaces \u2014 gold-market cornering and a first-generation speculative attack on the gold peg; layered and network vault defense; scalar and thermal laser threat physics \u2014 exposed via the frozen BOND-API MissionProvider protocol.",
   "codeRepository": null,
   "license": "https://spdx.org/licenses/MIT",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "programmingLanguage": "Python",
   "runtimePlatform": "Python 3.10+",
   "author": [
@@ -20,10 +20,15 @@
   "keywords": [
     "gold-market cornering",
     "supply shock price dynamics",
+    "speculative currency attack",
     "defense-in-depth security",
     "vault penetration assessment",
+    "shortest-path network hardening",
     "laser threat physics",
-    "burn-through time"
+    "burn-through time",
+    "Gaussian beam propagation",
+    "transient heat conduction",
+    "deterministic simulation"
   ],
   "dateCreated": "2026-08-04"
 }

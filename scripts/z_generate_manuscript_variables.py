@@ -3,10 +3,16 @@
 
 Computes the ``{{TOKEN}} → value`` map from ``manuscript/config.yaml`` and the
 deterministic domain core, writes it to ``output/data/manuscript_variables.json``,
-renders the three concept figures to ``output/figures/``, and prints a summary.
+renders one concept figure per model to ``output/figures/``, and prints a
+summary. Thin orchestrator — every value comes from ``src/goldfinger/``.
 
-Companion gate: ``tests/test_manuscript_variables.py`` asserts every token used
-in the numbered prose sections exists in the generated map.
+Companion gates in ``tests/``: every token used in the numbered prose sections
+must exist in the generated map, the declared ``GOLDFINGER_TOKENS`` tuple must
+equal the generated key set, and no computed result value may appear in the
+prose as a literal.
+
+See also ``scripts/z_generate_counts.py``, which regenerates
+``docs/_generated/COUNTS.md`` from the same map.
 """
 
 from __future__ import annotations

@@ -10,23 +10,42 @@ mission:
   provider_module: "goldfinger.mission"
   protocol: "bond_api.MissionProvider"
 
+concept_modules:
+  market_attack: "gold-market corner: supply shock, shocked clearing price, tatonnement"
+  reserve_attack: "first-generation speculative attack on the gold peg (Flood-Garber)"
+  vault_security: "layered defense-in-depth score and sequential penetration probability"
+  vault_threat_network: "Dijkstra minimum-effort intrusion path and greedy hardening"
+  laser_physics: "energy-balance burn-through time and its inverses"
+  laser_thermal: "Gaussian beam defocusing plus Carslaw-Jaeger conduction, burn range"
+
 review_gates:
-  determinism_gate: "fixed seed 2026, no untracked RNG, no wall-clock in persisted results"
+  determinism_gate: "declared seed MISSION_SEED, no random draws, no wall-clock in persisted results"
   coverage_gate: "at least 90 percent line and branch on src/goldfinger"
   mock_gate: "zero mocking, no MagicMock or unittest.mock"
   lineage_gate: "zero leftover exemplar-lineage placeholder strings"
+  token_gate: "GOLDFINGER_TOKENS equals the generate_variables key set exactly"
+  hardcode_gate: "no computed result value appears as a literal in manuscript prose"
+  protocol_freeze_gate: "goldfinger.mission keeps MissionProvider, GADGETS, register_market_gadgets"
 
 source_policy:
   - "pure domain core imports nothing beyond NumPy and stdlib; no infrastructure imports"
   - "bond_api confined to the goldfinger.mission adapter"
+  - "reference parameters live once, in the module REFERENCE_* constants"
+  - "scripts/ are thin orchestrators; no business logic"
 
 artifact_expectations:
-  - "output/data/manuscript_variables.json with 25 tokens"
+  # Token count is deliberately not asserted here: it is derived
+  # (GOLDFINGER_TOKEN_COUNT) and a literal would drift. See docs/_generated/COUNTS.md.
+  - "output/data/manuscript_variables.json covering every GOLDFINGER_TOKENS entry"
   - "output/figures/market_corner_trajectory.png"
+  - "output/figures/reserve_crisis.png"
   - "output/figures/vault_layered_score.png"
+  - "output/figures/vault_network.png"
   - "output/figures/laser_burn_through.png"
+  - "output/figures/laser_engagement.png"
+  - "docs/_generated/COUNTS.md regenerated from render_counts_markdown"
 
 benchmark_rubric:
   determinism: "repeated runs reproduce identical result tokens"
-  honesty: "all metrics computed, none hand-authored"
+  honesty: "all metrics computed, none hand-authored; every gate has a failing input"
   protocol_conformance: "discoverable by slug, MissionProvider lifecycle satisfied"

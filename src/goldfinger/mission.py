@@ -33,13 +33,25 @@ from bond_api.protocol import (
 )
 from bond_api.registry import GadgetRegistry
 
+from goldfinger import (
+    LASER_SEVERITY_THRESHOLD_W,
+    LASER_STANDOFF_RANGE_M,
+    MISSION_SEED,
+)
 from goldfinger.laser_physics import (
     REFERENCE_PHYSICS,
     burn_through_time,
     laser_threat_severity,
 )
 from goldfinger.laser_thermal import REFERENCE_BEAM, effective_burn_range, melt_time_at_distance
-from goldfinger.market_attack import REFERENCE_MODEL, price_gain, simulate_corner
+from goldfinger.market_attack import (
+    CONVERGENCE_TOLERANCE,
+    REFERENCE_MODEL,
+    convergence_residual,
+    has_converged,
+    price_gain,
+    simulate_corner,
+)
 from goldfinger.reserve_attack import (
     REFERENCE_ATTACK,
     attack_time,
@@ -57,6 +69,8 @@ from goldfinger.vault_security import (
 )
 from goldfinger.vault_threat_network import (
     REFERENCE_GRAPH,
+    REFERENCE_HARDENING,
+    REFERENCE_TARGET,
     edge_criticality,
     harden_network,
     minimum_effort_path,
@@ -65,15 +79,14 @@ from goldfinger.vault_threat_network import (
 __all__ = ["MissionProvider", "build_provider", "register_market_gadgets"]
 
 #: Fixed deterministic RNG seed (this mission performs no random draws).
-_SEED = 2026
+#: Sourced from the package constant so provenance and the manuscript's
+#: ``GOLDFINGER_SEED`` token cannot disagree.
+_SEED = MISSION_SEED
 #: Package version baked into provenance.
 _SUBPACKAGE_VERSION = "goldfinger.mission/0.2.0"
 
 #: Gadget registry the mission registers its concept tools into.
 GADGETS: GadgetRegistry = GadgetRegistry()
-
-#: Threat-window used for the laser-severity classification (seconds).
-_LASER_THREAT_WINDOW = 5.0
 
 
 def _corner_intel() -> dict[str, Any]:
@@ -92,6 +105,8 @@ def _corner_intel() -> dict[str, Any]:
         "shocked_price": result.shocked_price,
         "price_gain": result.gain,
         "trajectory": result.trajectory,
+        "convergence_residual": convergence_residual(result),
+        "converged": has_converged(result, CONVERGENCE_TOLERANCE),
     }
 
 
@@ -144,9 +159,15 @@ def _vault_intel() -> dict[str, Any]:
 
 def _vault_net_intel() -> dict[str, Any]:
     """Compute the deterministic network penetration / hardening headline numbers."""
-    source, target = "perimeter", "gold_chamber"
+    source, target = REFERENCE_TARGET
     effort, path = minimum_effort_path(REFERENCE_GRAPH, source, target)
-    hardening = harden_network(REFERENCE_GRAPH, source, target, budget=10, gain_per_unit=0.5)
+    hardening = harden_network(
+        REFERENCE_GRAPH,
+        source,
+        target,
+        budget=REFERENCE_HARDENING["budget"],
+        gain_per_unit=REFERENCE_HARDENING["gain_per_unit"],
+    )
     critical = edge_criticality(REFERENCE_GRAPH, source, target)
     return {
         "min_effort": effort,
@@ -173,7 +194,8 @@ def _laser_intel() -> dict[str, Any]:
     )
     return {
         "burn_through_time_s": t_burn,
-        "severity": laser_threat_severity(phys["power"], 1000.0),
+        "severity": laser_threat_severity(phys["power"], LASER_SEVERITY_THRESHOLD_W),
+        "severity_threshold_w": LASER_SEVERITY_THRESHOLD_W,
         "power_w": phys["power"],
     }
 
@@ -210,7 +232,7 @@ def _laser_thermal_intel() -> dict[str, Any]:
         "surface_melt_time_at_focus_s": t_focus,
         "threat_window_s": b["threat_window"],
         "waist_mm": b["waist"] * 1000.0,
-        "type": "serious" if range_m >= 25.0 else "short-range",
+        "type": "serious" if range_m >= LASER_STANDOFF_RANGE_M else "short-range",
     }
 
 
@@ -339,7 +361,7 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
             "vault_network": vault_net,
             "laser": laser,
             "laser_thermal": laser_thermal,
-            "all_converged": corner["trajectory"][-1] == corner["shocked_price"],
+            "all_converged": corner["converged"],
         }
         return MissionOutcome(
             success=True,

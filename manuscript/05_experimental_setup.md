@@ -4,47 +4,76 @@
 
 The deterministic reference parameters used by the pure domain core are
 declared in `manuscript/config.yaml` under `grand_slam:` and mirrored in each
-module's `REFERENCE_*` constant:
+module's `REFERENCE_*` constant. Every value below is injected from that single
+source of truth, so a change to the intel changes this section automatically.
 
-- **Market**: reference price `${{MARKET_REFERENCE_PRICE}}`/oz, normalized
-  floatable supply index `100.0`, fraction removed
-  `{{MARKET_FRACTION_REMOVED}}%`, elasticity `{{MARKET_ELASTICITY}}`,
-  tatonnement adjustment `0.4`, steps `40`.
-- **Reserve attack**: parity `1.0`, foreign rate `0.02`, interest elasticity
-  `8.0`, initial credit `0.10`, credit growth `0.10` (Flood–Garber).
-- **Vault**: six layers (perimeter, fence, guard response, vault door,
-  combination lock, gold storage) each rated in `[0,1]`; weights in
-  `DEFAULT_WEIGHTS`. Network zone graph in `vault_threat_network.REFERENCE_GRAPH`
-  with hardening budget `10` at `0.5` effort/unit.
-- **Laser**: power `{{LASER_POWER_W}}` W, spot area `1e-5` m², steel density
-  `7800` kg/m³, thickness `{{LASER_THICKNESS_MM}}` mm, specific heat
-  `500` J/(kg·K), $\Delta T$ `1500` K, absorptivity `0.6`; Gaussian beam intel
-  (waist `{{LASER_WAIST_MM}}` mm, wavelength `1.064e-6` m, melt window
-  `{{LASER_THREAT_WINDOW_S}}` s) in `laser_thermal.REFERENCE_BEAM`.
+**Market corner** (`market_attack.REFERENCE_MODEL`) — reference price
+`${{MARKET_REFERENCE_PRICE}}`/oz clearing a normalized floatable-supply index
+of `{{MARKET_SUPPLY_INDEX}}`; the corner sterilizes
+`{{MARKET_FRACTION_REMOVED}}%` of that float against a constant demand
+elasticity of `{{MARKET_ELASTICITY}}`. The tâtonnement runs `{{MARKET_STEPS}}`
+steps at adjustment coefficient `{{MARKET_ADJUSTMENT}}`.
+
+**Speculative reserve attack** (`reserve_attack.REFERENCE_ATTACK`) — a
+normalised peg at parity `{{RESERVE_PARITY}}`, foreign interest rate
+`{{RESERVE_FOREIGN_RATE}}`, money-demand semi-elasticity $\alpha$ =
+`{{RESERVE_ALPHA}}`, initial domestic credit `{{RESERVE_CREDIT_0}}`, and
+credit growth $\mu$ = `{{RESERVE_GROWTH}}`. The model validates its own
+feasibility conditions ($0 < \alpha\mu < 1$, and initial credit small enough
+that the peg has not already fallen) before computing an attack time.
+
+**Vault — layered** (`vault_security.REFERENCE_RATINGS`) —
+`{{VAULT_LAYER_COUNT}}` layers (perimeter, fence, guard response, vault door,
+combination lock, gold storage), each rated in `[0,1]`, weighted by
+`DEFAULT_WEIGHTS` and traversed in `LAYER_ORDER`.
+
+**Vault — network** (`vault_threat_network.REFERENCE_GRAPH`) — an undirected
+graph of `{{VAULT_ZONE_COUNT}}` defensive zones with intrusion-effort edge
+costs. The reference intrusion problem is perimeter → gold chamber
+(`REFERENCE_TARGET`); the reference defensive posture (`REFERENCE_HARDENING`)
+is a budget of `{{VAULT_HARDENING_BUDGET}}` units buying
+`{{VAULT_GAIN_PER_UNIT}}` effort each.
+
+**Laser — scalar** (`laser_physics.REFERENCE_PHYSICS`) — power
+`{{LASER_POWER_W}}` W onto a focused spot of `{{LASER_SPOT_AREA_M2}}` m²
+against a steel plate of density `{{LASER_DENSITY_KGM3}}` kg/m³ and thickness
+`{{LASER_THICKNESS_MM}}` mm, specific heat `{{LASER_SPECIFIC_HEAT}}` J/(kg·K),
+$\Delta T$ = `{{LASER_DELTA_T_K}}` K, absorptivity `{{LASER_ABSORPTIVITY}}`.
+A beam is classified *serious* at or above `{{LASER_SEVERITY_THRESHOLD_W}}` W.
+
+**Laser — thermal** (`laser_thermal.REFERENCE_BEAM`) — an Nd:YAG-class
+continuous-wave beam of wavelength `{{LASER_WAVELENGTH_NM}}` nm focused to a
+waist of `{{LASER_WAIST_MM}}` mm, against steel of thermal conductivity
+`{{LASER_CONDUCTIVITY}}` W/(m·K) melting at `{{LASER_MELT_TEMP_K}}` K from an
+ambient of `{{LASER_AMBIENT_K}}` K, engaged within a
+`{{LASER_THREAT_WINDOW_S}}` s threat window.
 
 ## Determinism policy
 
-All computations use fixed seeds (`seed = 2026` in the mission adapter) and
-make no random draws. Persisted artifacts carry no wall-clock dependence
-(`wall_time_s = 0.0` in provenance; the only varying timestamp is the
-`GENERATION_TIMESTAMP` manuscript token, which defaults to
-{{GENERATION_TIMESTAMP}}). Figure outputs are byte-deterministic for fixed
-inputs.
+The mission declares a fixed seed of `{{GOLDFINGER_SEED}}` and performs **no**
+random draws — the seed is recorded in provenance so a replay is auditable,
+not because any sampling occurs. Persisted artifacts carry no wall-clock
+dependence (`wall_time_s = 0.0` in provenance). The one deliberately varying
+value is the `GENERATION_TIMESTAMP` token (currently
+{{GENERATION_TIMESTAMP}}) and the `GOLDFINGER_VERSION_HASH` derived from the
+full token map. Figure output is byte-deterministic for fixed inputs, which
+`tests/test_figures.py` asserts by rendering twice and comparing.
 
 ## Software environment
 
 - Python: as resolved by `uv` (the package requires `>=3.10`)
 - Dependencies: NumPy, Matplotlib, PyYAML, and the frozen `bond-api` protocol
-  (local path dependency under
-  `/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api`)
+  (a local path dependency declared in `pyproject.toml` under
+  `[tool.uv.sources]`; the sibling `bond-api` package in this working tree)
 - Dev: pytest, pytest-cov, mypy, ruff, types-PyYAML
 
 ## Mission adapter
 
-The BOND-API `MissionProvider` (`src/goldfinger/mission.py`) wraps the six
-models and registers six gadgets (`market_corner`, `reserve_attack`,
-`vault_defense`, `vault_hardening`, `laser_threat`, `laser_thermal`) with a
-`GadgetRegistry`. It is discoverable by slug `goldfinger` on `sys.path` and
-drives the full brief–recon–plan–execute–debrief lifecycle with deterministic
-provenance. The adapter's public shape is stable; the mission internals
-(assets, plan steps, outcome results, lessons) deepen with each phase.
+The BOND-API `MissionProvider` (`src/goldfinger/mission.py`) wraps all
+{{GOLDFINGER_MODULE_COUNT}} models and registers six gadgets
+(`market_corner`, `reserve_attack`, `vault_defense`, `vault_hardening`,
+`laser_threat`, `laser_thermal`) with a module-level `GadgetRegistry`. It is
+discoverable by slug `goldfinger` on `sys.path` and drives the full
+brief–recon–plan–execute–debrief lifecycle with deterministic provenance. The
+adapter's public shape is frozen across phases; the mission internals (assets,
+plan steps, outcome results, lessons) are what deepen.

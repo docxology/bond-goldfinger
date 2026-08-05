@@ -24,7 +24,7 @@ run and audit.
 Every headline number in this report is a generated variable from a single
 deterministic source of truth, real computation only, with no mocked
 dependencies and no hardcoded measured counts. The package ships as a
-BOND-API `MissionProvider` (film `goldfinger`, codename `GRAND SLAM`), so the
-six models are discoverable and drivable by the suite's orchestrator through
-the full mission lifecycle — the adapter's public shape is stable across phases;
-only its internals deepen.
+BOND-API `MissionProvider` (film `goldfinger`, codename `GRAND SLAM`), so all
+{{GOLDFINGER_MODULE_COUNT}} models are discoverable and drivable by the suite's
+orchestrator through the full mission lifecycle — the adapter's public shape is
+stable across phases; only its internals deepen.

@@ -1,21 +1,140 @@
-# References
+% PROJECT BOND — goldfinger (GRAND SLAM) bibliography.
+%
+% Every entry is a real, checkable source for a model implemented in
+% src/goldfinger/. Entries are merged into the compendium's unified
+% bibliography by bond-manuscript, so keys must stay globally distinctive.
+% Do not add a reference you cannot verify — an unverifiable citation is a
+% worse defect than a missing one.
 
-[1] A. Walras, *Éléments d'économie politique pure*, L. Corbaz, Lausanne, 1874. — Classical tatonnement / price-adjustment framework underlying the market-cornering model.
+@book{walras1874elements,
+  author    = {Walras, L{\'e}on},
+  title     = {{\'E}l{\'e}ments d'{\'e}conomie politique pure, ou th{\'e}orie de la richesse sociale},
+  publisher = {L. Corbaz \& Cie},
+  address   = {Lausanne},
+  year      = {1874},
+  note      = {Origin of the t{\^a}tonnement price-adjustment process used by
+               \texttt{market\_attack.simulate\_corner}.}
+}
 
-[2] J. R. Hicks, *Value and Capital*, 2nd ed., Oxford University Press, 1946. — Constant-elasticity demand and market equilibrium.
+@book{hicks1946value,
+  author    = {Hicks, John R.},
+  title     = {Value and Capital: An Inquiry into Some Fundamental Principles of Economic Theory},
+  edition   = {2},
+  publisher = {Oxford University Press},
+  address   = {Oxford},
+  year      = {1946},
+  note      = {Constant-elasticity demand and market clearing behind the
+               shocked-equilibrium price.}
+}
 
-[3] D. O. Veil and N. Rungta, "Defense-in-depth risk scoring for physical-security barriers," *Journal of Security Engineering*, vol. 12, no. 3, pp. 201–214, 2019. — Layered security scoring and sequential penetration probability.
+@article{kyle1985continuous,
+  author  = {Kyle, Albert S.},
+  title   = {Continuous Auctions and Insider Trading},
+  journal = {Econometrica},
+  volume  = {53},
+  number  = {6},
+  pages   = {1315--1335},
+  year    = {1985},
+  note    = {Canonical treatment of the price impact of a strategic trader —
+             the microstructure counterpart to the corner's supply shock.}
+}
 
-[4] W. M. Steen and J. Mazumder, *Laser Material Processing*, 4th ed., Springer, 2010. — Continuous-wave laser energy-balance and cutting models.
+@article{krugman1979model,
+  author  = {Krugman, Paul},
+  title   = {A Model of Balance-of-Payments Crises},
+  journal = {Journal of Money, Credit and Banking},
+  volume  = {11},
+  number  = {3},
+  pages   = {311--325},
+  year    = {1979},
+  note    = {The first-generation speculative-attack setup underlying
+             \texttt{reserve\_attack}.}
+}
 
-[5] BOND-API project, "THE PROTOCOL: the frozen `MissionProvider` contract," PROJECT BOND suite, `bond-api` package, 2026. — Protocol this film package implements.
+@article{flood1984collapsing,
+  author  = {Flood, Robert P. and Garber, Peter M.},
+  title   = {Collapsing Exchange-Rate Regimes: Some Linear Examples},
+  journal = {Journal of International Economics},
+  volume  = {17},
+  number  = {1--2},
+  pages   = {1--13},
+  year    = {1984},
+  note    = {The linear shadow-exchange-rate and attack-time closed forms
+             implemented in \texttt{reserve\_attack.attack\_time}.}
+}
 
-[6] P. Krugman, "A model of balance-of-payments crises," *Journal of Money, Credit and Banking*, vol. 11, no. 3, pp. 311–325, 1979. — The first-generation speculative-attack setup underlying the reserve-attack model.
+@book{garcia2007design,
+  author    = {Garcia, Mary Lynn},
+  title     = {The Design and Evaluation of Physical Protection Systems},
+  edition   = {2},
+  publisher = {Butterworth-Heinemann},
+  address   = {Burlington, MA},
+  year      = {2007},
+  note      = {Layered physical protection, adversary sequence diagrams, and
+               detection/delay path analysis — the standard reference behind
+               both \texttt{vault\_security} and \texttt{vault\_threat\_network}.}
+}
 
-[7] R. P. Flood and P. M. Garber, "Collapsing exchange-rate regimes: some linear examples," *Journal of International Economics*, vol. 17, no. 1–2, pp. 1–13, 1984. — The shadow-exchange-rate / attack-time closed form used in `reserve_attack.py`.
+@article{dijkstra1959note,
+  author  = {Dijkstra, Edsger W.},
+  title   = {A Note on Two Problems in Connexion with Graphs},
+  journal = {Numerische Mathematik},
+  volume  = {1},
+  pages   = {269--271},
+  year    = {1959},
+  note    = {The shortest-path algorithm used for minimum-effort vault
+             penetration.}
+}
 
-[8] E. W. Dijkstra, "A note on two problems in connexion with graphs," *Numerische Mathematik*, vol. 1, pp. 269–271, 1959. — The shortest-path algorithm used for minimum-effort vault penetration.
+@article{israeli2002shortest,
+  author  = {Israeli, Eitan and Wood, R. Kevin},
+  title   = {Shortest-Path Network Interdiction},
+  journal = {Networks},
+  volume  = {40},
+  number  = {2},
+  pages   = {97--111},
+  year    = {2002},
+  note    = {The shortest-path interdiction / improvement problem the greedy
+             hardening allocation in \texttt{harden\_network} approximates.}
+}
 
-[9] H. S. Carslaw and J. C. Jaeger, *Conduction of Heat in Solids*, 2nd ed., Oxford University Press, 1959. — The constant-surface-flux temperature solution used by `laser_thermal.py`.
+@book{steen2010laser,
+  author    = {Steen, William M. and Mazumder, Jyotirmoy},
+  title     = {Laser Material Processing},
+  edition   = {4},
+  publisher = {Springer},
+  address   = {London},
+  year      = {2010},
+  note      = {Continuous-wave laser energy-balance and cutting models behind
+               \texttt{laser\_physics.burn\_through\_time}.}
+}
 
-[10] E. Israeli and R. K. Wood, "Shortest-path network interdiction," *Networks*, vol. 40, no. 2, pp. 97–111, 2002. — The shortest-path interdiction / network-hardening problem implemented greedily in `vault_threat_network.py`.
+@book{carslaw1959conduction,
+  author    = {Carslaw, Horatio S. and Jaeger, John C.},
+  title     = {Conduction of Heat in Solids},
+  edition   = {2},
+  publisher = {Oxford University Press},
+  address   = {Oxford},
+  year      = {1959},
+  note      = {The constant-surface-flux temperature solution used by
+               \texttt{laser\_thermal.surface\_melt\_time}.}
+}
+
+@book{siegman1986lasers,
+  author    = {Siegman, Anthony E.},
+  title     = {Lasers},
+  publisher = {University Science Books},
+  address   = {Mill Valley, CA},
+  year      = {1986},
+  note      = {Gaussian-beam propagation, waist, and Rayleigh range used by
+               \texttt{laser\_thermal.spot\_radius\_at\_distance}.}
+}
+
+@misc{bondapi2026protocol,
+  author       = {{PROJECT BOND suite}},
+  title        = {{BOND-API}: the frozen {MissionProvider} protocol},
+  howpublished = {\texttt{bond-api} package, local-only working tree},
+  year         = {2026},
+  note         = {The mission contract this film package implements
+                  (brief / recon / plan / execute / debrief).}
+}

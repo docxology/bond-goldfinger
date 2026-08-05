@@ -18,20 +18,43 @@ conditions:
     layers: [perimeter, fence, guard_response, vault_door, combination_lock, gold_storage]
     primary_metric: "weighted defense-in-depth score and penetration probability"
     baseline: "reference ratings in vault_security.REFERENCE_RATINGS"
+  reserve:
+    referencing: "domestic-credit growth against a fixed gold peg"
+    levels: "credit growth mu sweep, holding alpha*mu in (0, 1)"
+    primary_metric: "attack time, the gradual reserve floor, and the suddenness gap between them"
+    baseline: "reference intel in reserve_attack.REFERENCE_ATTACK"
+  vault_network:
+    referencing: "intrusion effort over the vault zone graph"
+    levels: "hardening budget sweep at fixed gain_per_unit"
+    primary_metric: "minimum-effort intrusion path and the effort lift from hardening"
+    baseline: "reference intel in vault_threat_network.REFERENCE_GRAPH / REFERENCE_HARDENING"
   laser:
     referencing: "burn-through time vs material and power"
     levels: "power sweep [1e3, 2e4] W"
     primary_metric: "burn-through time for a fixed steel plate"
-    baseline: "power = 5000 W, thickness = 0.05 m"
+    baseline: "reference intel in laser_physics.REFERENCE_PHYSICS"
+  laser_thermal:
+    referencing: "engagement range under Gaussian defocusing and heat conduction"
+    levels: "range sweep 0 m to max_distance at fixed step"
+    primary_metric: "surface melt time vs distance, and the effective burn range in the window"
+    baseline: "reference intel in laser_thermal.REFERENCE_BEAM"
 
 expected_figures:
   - "market_corner_trajectory.png"
+  - "reserve_crisis.png"
   - "vault_layered_score.png"
+  - "vault_network.png"
   - "laser_burn_through.png"
+  - "laser_engagement.png"
 
 expected_tables:
   - "manuscript_variables.json token map"
+  - "docs/_generated/COUNTS.md headline result table"
 
 ablation:
   - "market: sweep fraction_removed"
+  - "market: shorten tatonnement steps until convergence fails the tolerance"
+  - "reserve: sweep credit growth mu"
+  - "vault_network: sweep hardening budget"
   - "laser: sweep power"
+  - "laser_thermal: sweep threat window"

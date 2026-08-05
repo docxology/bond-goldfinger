@@ -6,80 +6,114 @@ A PROJECT BOND film package that models the film's operational concepts as
 small, deterministic, fully-tested scientific modules — across three attack
 surfaces — then exposes them as a protocol-compliant BOND-API mission.
 
-## Mission concept
+## The film, mapped to software
 
-Auric Goldfinger's scheme is treated as a *quantitative modelling exercise*
-across six pure modules and three fronts:
+Auric Goldfinger's scheme is treated as a *quantitative modelling exercise*.
+Each of the film's three technical ideas gets two modules: a closed-form model,
+and a structural model that captures what the closed form cannot express.
 
-**Macroeconomic attack (market + reserve)**
-1. `market_attack.py` — Operation Grand Slam as a supply shock: removing a
-   fraction of the floatable gold raises the clearing price along a
-   constant-elasticity demand curve (tatonnement dynamics to the new
-   equilibrium).
-2. `reserve_attack.py` — the monetary front: a first-generation **speculative
-   attack** (Flood–Garber) on the gold peg. Credit growth drains reserves; the
-   peg collapses the moment the shadow floating rate crosses parity — an attack
-   strictly *before* gradual exhaustion.
+| Film concept | Closed-form model | Structural model |
+|---|---|---|
+| Corner the gold market ("Operation Grand Slam") | `market_attack` — supply shock along a constant-elasticity demand curve | `reserve_attack` — speculative attack that collapses the gold peg itself |
+| Breach Fort Knox | `vault_security` — layered defence-in-depth scoring | `vault_threat_network` — the intruder's actual route through the zone graph |
+| The industrial laser | `laser_physics` — energy-balance burn-through time | `laser_thermal` — Gaussian defocusing plus heat conduction over range |
 
-**Vault defense (layered + network)**
-3. `vault_security.py` — Fort Knox-style layered assessment: per-layer ratings
-   combine into a weighted defense-in-depth score; sequential-penetration
-   probability follows the product rule.
-4. `vault_threat_network.py` — the network front: minimum-effort vault
-   penetration (Dijkstra over a zone graph, weak path through the secret
-   tunnel) and greedy network hardening that raises the intruder's required
-   effort.
+The film is the spec; the code is the implementation. No stubs, no lorem ipsum.
 
-**Laser threat (scalar + thermal)**
-5. `laser_physics.py` — energy-balance burn-through time vs material and
-   power.
-6. `laser_thermal.py` — the spatio-temporal front: Gaussian beam focusing
-   (Rayleigh range, defocusing), Carslaw–Jaeger heat conduction, and the
-   effective burn range within a threat window.
+## Modules
 
-All six are pure (no I/O), deterministic (fixed seed, no wall-clock
-dependence), and importable with only NumPy — they do **not** depend on
-bond-api. `src/goldfinger/mission.py` is the only module that imports the
-frozen BOND-API protocol, implementing the `MissionProvider` lifecycle
-(brief / recon / plan / execute / debrief) and registering six gadgets. The
-adapter's **public shape is stable across phases** (film, lifecycle methods,
-`GADGETS` registry, `register_market_gadgets`); only its internals deepen.
+Pure domain core — no I/O, no `bond_api`, no infrastructure imports, fully
+deterministic, importable with only the standard library and NumPy:
+
+| Module | Computes |
+|---|---|
+| `src/goldfinger/market_attack.py` | Effective supply after sterilisation, the shocked clearing price $P_0(S_0/S_\text{eff})^{1/\eta}$, fractional corner gain, the tâtonnement trajectory, and tolerance-based convergence (`convergence_residual`, `has_converged`) |
+| `src/goldfinger/reserve_attack.py` | The first-generation speculative attack (Flood–Garber): reserve drain under a fixed peg, the rational-expectations shadow floating rate, the attack time at which it reaches parity, the *later* gradual-exhaustion floor, and post-float depreciation |
+| `src/goldfinger/vault_security.py` | Weighted defence-in-depth score, product-rule sequential penetration probability, expected breach time, weakest layer, marginal fortification priorities, and the severity verdict |
+| `src/goldfinger/vault_threat_network.py` | Deterministic Dijkstra minimum-effort intrusion path over the vault zone graph (the weak path runs through the secret tunnel), per-edge criticality, and greedy budget hardening that raises the intruder's required effort |
+| `src/goldfinger/laser_physics.py` | Heat load of the illuminated material column, absorbed power, burn-through time, and its inverses for required power and maximum burnable thickness, plus threat-severity binning |
+| `src/goldfinger/laser_thermal.py` | Gaussian beam Rayleigh range and spot growth with distance, absorbed flux, the Carslaw–Jaeger constant-flux surface temperature, surface melt time, and the effective burn range within a threat window |
+
+Adapter and plumbing:
+
+| Module | Role |
+|---|---|
+| `src/goldfinger/mission.py` | The BOND-API `MissionProvider` adapter — the only module that imports `bond_api` |
+| `src/goldfinger/manuscript_variables.py` | Hydrates the `{{TOKEN}}` map from `manuscript/config.yaml` plus the reference constants; also renders `docs/_generated/COUNTS.md` |
+| `src/goldfinger/figures/plots.py` | One deterministic PNG renderer per concept model, listed in `figures.FIGURE_RENDERERS` |
+| `src/goldfinger/__init__.py` | Public API and the shared mission constants (`FILM`, `CODENAME`, `MISSION_SEED`, `LASER_SEVERITY_THRESHOLD_W`, `LASER_STANDOFF_RANGE_M`) |
+
+## The MissionProvider surface
+
+`src/goldfinger/mission.py` implements the frozen BOND-API protocol
+structurally — no inheritance. The orchestrator discovers it by importing
+`goldfinger.mission` and binding the class whose `film` matches the slug.
+
+```python
+from goldfinger.mission import GADGETS, MissionProvider, build_provider, register_market_gadgets
+
+provider = build_provider()          # film == "goldfinger"
+brief    = provider.brief()          # MissionBrief: codename, objectives, assets, constraints
+report   = provider.recon(request)   # ReconReport: findings
+plan     = provider.plan(brief)      # MissionPlan: one step per model, plus synthesis
+outcome  = provider.execute(plan)    # MissionOutcome: results + Provenance(seed, hash, version)
+debrief  = provider.debrief(outcome) # Debrief: outcome + lessons
+```
+
+`outcome.results` is keyed `corner`, `reserve`, `vault`, `vault_network`,
+`laser`, `laser_thermal`, plus `steps_completed` and `all_converged`. The
+module-level `GADGETS` registry receives six concept callables via
+`register_market_gadgets()`: `market_corner`, `reserve_attack`,
+`vault_defense`, `vault_hardening`, `laser_threat`, `laser_thermal`.
+
+**This surface is frozen.** bond-cli, the coordinator reconcile, and the
+orchestrator consume it across the fleet, so the module path, class name, `film`
+value, five method names, `GADGETS`, `register_market_gadgets`, and
+`build_provider` do not change between phases. Everything behind them —
+assets, plan steps, result payloads, the concept modules themselves — is free to
+deepen. See [`docs/architecture.md`](docs/architecture.md).
 
 ## Layout
 
 ```
-src/goldfinger/
-  market_attack.py        # gold-market cornering (supply-shock price dynamics)
-  reserve_attack.py       # speculative attack on the gold peg (macro)
-  vault_security.py       # layered vault defense scoring + penetration
-  vault_threat_network.py # graph penetration + network hardening
-  laser_physics.py        # burn-through time vs material/power
-  laser_thermal.py        # Gaussian-beam + heat-conduction engagement
-  mission.py              # BOND-API MissionProvider adapter (GRAND SLAM)
-  manuscript_variables.py # {{TOKEN}} hydration from manuscript/config.yaml
-  figures/plots.py        # six concept figures -> output/figures/
-scripts/
-  brief.py recon.py plan.py execute.py debrief.py   # mission-phase CLIs
-  z_generate_manuscript_variables.py                # tokens + figures
-manuscript/               # identity + reference intel + numbered prose
-tests/                    # real-data tests, zero mocks
+src/goldfinger/       six concept modules + mission adapter + token map + figures/
+scripts/              thin CLIs: brief recon plan execute debrief
+                      z_generate_manuscript_variables.py  z_generate_counts.py
+manuscript/           config.yaml (reference intel), numbered prose, references.bib
+docs/                 architecture, testing philosophy, agent instructions, _generated/
+tests/                real-data tests, zero mocks, one file per module
 ```
 
-## Install & run
+## Install and run
 
 ```bash
-uv sync --extra dev          # installs deps incl. the bond-api path dependency
-uv run python scripts/debrief.py            # run the full mission flow
-uv run python scripts/execute.py            # print the deterministic outcome
-uv run python scripts/z_generate_manuscript_variables.py
+uv sync --extra dev                                    # deps incl. the bond-api path dependency
+
+uv run python scripts/brief.py                         # mission brief
+uv run python scripts/recon.py "survey the vault"      # recon findings
+uv run python scripts/plan.py                          # ordered plan steps
+uv run python scripts/execute.py                       # all six models, with provenance
+uv run python scripts/debrief.py                       # full lifecycle + lessons
+
+uv run python scripts/z_generate_manuscript_variables.py   # tokens + figures
+uv run python scripts/z_generate_counts.py                 # docs/_generated/COUNTS.md
 ```
+
+The six concept modules import standalone without `bond-api`; only
+`mission.py` and the phase CLIs need the protocol.
 
 ## Verification gate
 
 ```bash
-uv run python -m pytest tests/ --cov=src/goldfinger --cov-fail-under=90
+uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/ && uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/goldfinger scripts
 ```
+
+The floor is **90% line and branch** coverage on `src/goldfinger/`, zero
+failures, zero skips, and no mocking framework anywhere. Current measured
+figures live in [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md), which
+is generated — they are deliberately not restated here, because a number typed
+into a README rots the next time someone adds a test.
 
 Local-only working tree — there is no remote and this package is never pushed.

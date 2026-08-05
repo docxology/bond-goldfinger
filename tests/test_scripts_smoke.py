@@ -85,3 +85,30 @@ def test_generate_manuscript_variables_writes_artifacts(tmp_path: Path) -> None:
     payload = json.loads(data_json.read_text(encoding="utf-8"))
     assert "MARKET_PRICE_GAIN_PCT" in payload
     assert "VAULT_SCORE" in payload
+
+
+def test_generate_counts_cli_writes_the_generated_file(tmp_path: Path) -> None:
+    """The counts generator is a real generator, run in a sandbox copy."""
+    import shutil
+
+    sandbox = tmp_path / "pkg"
+    shutil.copytree(
+        _PROJECT_ROOT,
+        sandbox,
+        ignore=shutil.ignore_patterns(".venv", ".git", "output", "__pycache__"),
+    )
+    target = sandbox / "docs" / "_generated" / "COUNTS.md"
+    target.unlink()
+    proc = subprocess.run(
+        [sys.executable, "scripts/z_generate_counts.py", "--tests", "151", "--coverage", "100.0"],
+        capture_output=True,
+        text=True,
+        cwd=sandbox,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert target.is_file()
+    body = target.read_text(encoding="utf-8")
+    assert "**151 collected**" in body
+    assert "**100.00%**" in body
+    assert "Pure domain modules" in body

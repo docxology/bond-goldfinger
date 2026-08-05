@@ -6,8 +6,10 @@
 
 paper:
   title: "Goldfinger: GRAND SLAM — Special-Agent Mission Software"
-  subtitle: "Gold-Market Cornering, Vault Defense Assessment, and Laser Threat Physics"
-  version: "0.1.0"
+  subtitle: >-
+    Cornering and Currency Attack, Layered and Network Vault Defense,
+    and Scalar and Thermal Laser Threat Physics
+  version: "0.2.0"
   date: "2026-08-04"
 
 authors:
@@ -28,10 +30,16 @@ keywords:
   - "supply shock price dynamics"
   - "constant-elasticity demand"
   - "tatonnement adjustment"
+  - "speculative currency attack"
+  - "first-generation crisis model"
+  - "shadow exchange rate"
   - "defense-in-depth security"
   - "vault penetration assessment"
+  - "shortest-path network hardening"
   - "laser threat physics"
   - "burn-through time"
+  - "Gaussian beam propagation"
+  - "transient heat conduction"
   - "deterministic simulation"
   - "reproducible research"
 

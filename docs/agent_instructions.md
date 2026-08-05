@@ -1,38 +1,104 @@
 # Agent Instructions — goldfinger (GRAND SLAM)
 
-Operational constraints for AI agents working in this film package. Read these
-before modifying this project.
+Concrete operational instructions for an agent working in this film package.
+Read this before modifying anything. Background is in
+[`architecture.md`](architecture.md) and [`testing_philosophy.md`](testing_philosophy.md).
 
-## Operational constraints
+## Orientation (do this first)
 
-- **Scope**: work only inside this package directory. Never touch sibling
-  BOND packages, bond root files, or the template repo.
-- **Local-only**: there is no remote. Never push. Commit path-scoped within
-  this repo only.
-- **No mocks**: tests use real computation and real data only. No
-  `MagicMock`, `mocker.patch`, or `unittest.mock`.
-- **Determinism**: fixed seeds, no untracked RNG, no wall-clock dependence in
-  persisted results. Figure output is byte-deterministic.
-- **Layer contract**: the pure domain modules (`market_attack`,
-  `vault_security`, `laser_physics`) must stay infrastructure-free and
-  importable without `bond-api`. Only `mission.py` may import `bond_api`.
-- **Manuscript metrics**: inject all result numbers as `{{TOKEN}}`s from
-  `manuscript_variables.py`; never hardcode measured values in prose.
-- **Lineage**: remove stray exemplar-lineage placeholder strings; when
-  documenting the lineage grep, bracket-split the pattern so docs don't trip
-  their own gate.
+```bash
+cd projects/working/bond/goldfinger
+uv sync --extra dev                 # installs deps incl. the bond-api path dependency
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run python scripts/execute.py    # see all six models produce real numbers
+cat docs/_generated/COUNTS.md       # current structural counts and headlines
+```
 
-## Consensus procedures
+If `uv sync` cannot resolve `bond-api`, the six concept modules still import
+standalone — only `mission.py` and the phase CLIs need the protocol. Build
+against the pure core and note the blocked integration in `TODO.md` rather than
+stalling.
 
-- Run the full gate before declaring done:
-  `uv run python -m pytest tests/ --cov=src/goldfinger --cov-fail-under=90`,
-  `uv run ruff check src/ scripts/ tests/`,
-  `uv run ruff format --check src/ scripts/ tests/`,
-  `uv run mypy src/goldfinger scripts`.
-- Verify `git status` is clean after committing.
+## Hard boundaries
 
-## References
+- **Scope**: work only inside this package directory. Never touch a sibling
+  BOND package, the bond root files, or the template repo.
+- **Local-only**: there is no remote. Never push. Commit path-scoped inside this
+  repository only.
+- **Never change the frozen protocol surface.** `goldfinger.mission` must keep
+  exporting `MissionProvider` (with `film = "goldfinger"` and the five lifecycle
+  methods), the module-level `GADGETS` registry, `register_market_gadgets`, and
+  `build_provider`. bond-cli, the coordinator reconcile, and the orchestrator
+  consume these across the fleet. Deepen the internals freely; do not rename the
+  surface. `tests/test_protocol_integration.py` is the tripwire.
 
-- `docs/architecture.md` — module boundaries and data flow.
-- `docs/testing_philosophy.md` — how tests are written here.
-- `../manuscript/AGENTS.md` — manuscript/token protocol.
+## Where code goes
+
+| If you are adding… | Put it in… |
+|---|---|
+| A model, formula, or algorithm | A module in `src/goldfinger/` — pure, typed, docstringed, no I/O, no `bond_api` |
+| Something the mission should report | An `_*_intel()` helper in `mission.py`, surfaced through the `results` payload |
+| A new number for the manuscript | `generate_variables()` **and** the `GOLDFINGER_TOKENS` tuple, then the `{{TOKEN}}` in the prose |
+| A new figure | A `plot_*` renderer in `figures/plots.py`, its name in `FIGURE_RENDERERS`, a label row in `manuscript/SYNTAX.md`, and an anchor in `03_results.md` |
+| A CLI | `scripts/` — argument parsing, printing, and file writing only; no computation |
+
+Never place business logic in `scripts/`. A script that computes something is a
+defect even if it works.
+
+## Non-negotiables
+
+- **No mocks.** No `MagicMock`, `mocker.patch`, `unittest.mock`, or
+  `create_autospec`. The domain core is pure functions; call them for real.
+- **Determinism.** Fixed inputs, no untracked RNG, no wall-clock dependence in
+  persisted results. Inject `now=` wherever a timestamp would otherwise leak.
+- **No hand-authored metrics in prose.** Every number in `manuscript/` arrives
+  as a `{{TOKEN}}`; every number in `docs/` either cites
+  `_generated/COUNTS.md` or describes the gate. Counts of modules, figures, and
+  tokens are numbers too — they have tokens.
+- **Single source of truth for reference intel.** Parameters live in the module
+  `REFERENCE_*` constants (mirrored by `manuscript/config.yaml`). The adapter,
+  the token map, and the figures read those constants. Do not repeat a literal
+  in a second place — that is how three "authoritative" values diverge.
+- **Gates must be able to fail.** If you add an assertion, be able to state the
+  input that turns it red, and prefer adding that input as a positive-control
+  test. See `test_the_anti_hardcode_gate_can_actually_fail`.
+- **Type hints and docstrings** on every public function; ruff and mypy clean.
+- **No exemplar lineage strings.** When documenting the lineage grep,
+  bracket-split the pattern so the doc does not trip its own check.
+
+## The full gate
+
+Run all of it before declaring done, and read the output rather than the exit
+code alone:
+
+```bash
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/
+uv run ruff format --check src/ scripts/ tests/
+uv run mypy src/goldfinger scripts
+rg -n "template[_]code_project" .        # expect zero hits
+```
+
+Then regenerate anything derived and confirm the tree is clean:
+
+```bash
+uv run python scripts/z_generate_manuscript_variables.py
+uv run python scripts/z_generate_counts.py --tests <N> --coverage <PCT>
+git status
+```
+
+## Common traps in this package
+
+- Adding a `.py` file to `src/goldfinger/` silently increments
+  `GOLDFINGER_MODULE_COUNT`, because that count is derived from the package
+  directory. If the new file is plumbing rather than a concept model, add it to
+  `_NON_CONCEPT_MODULES` in `manuscript_variables.py`.
+- Adding a token to `generate_variables()` without adding it to
+  `GOLDFINGER_TOKENS` (or vice versa) fails
+  `test_declared_token_tuple_equals_the_generated_key_set`. That is intended —
+  the tuple is the declared contract.
+- Formatting a small probability with too few digits silently rounds it to
+  `0.0`. Sequential vault penetration is ~0.009%; check the rendered token, not
+  just the float.
+- `effective_burn_range` returns `0.0` both for "melts only at focus" and "never
+  melts in the window". Disambiguate with `melt_time_at_distance(..., 0.0)`.

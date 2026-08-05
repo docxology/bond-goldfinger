@@ -1,8 +1,11 @@
 # Methodology
 
 The GRAND SLAM models each reduce one operational concept to a closed-form
-relation and a deterministic iterative update. All three are pure functions of
-their inputs.
+relation and a deterministic iterative update. All {{GOLDFINGER_MODULE_COUNT}}
+are pure functions of their inputs — no I/O, no random draws, no wall-clock
+dependence. The three attack surfaces are presented in pairs: the closed-form
+model first, then the structural model that captures what the closed form
+cannot.
 
 ## Market cornering: supply shock to price dynamics
 
@@ -23,9 +26,13 @@ coefficient $\lambda \in (0,2)$,
 $$P_{t+1} = P_t + \lambda\,(P^* - P_t),$$
 
 which converges monotonically for $\lambda < 1$. The fractional corner gain is
-$P^*/P_0 - 1$. For the reference intel ($f$ = {{MARKET_FRACTION_REMOVED}}%,
-$\eta$ = {{MARKET_ELASTICITY}}, $P_0$ = ${{MARKET_REFERENCE_PRICE}}$) the gain
-resolves to the results in Section [Results].
+$P^*/P_0 - 1$. Because the trajectory approaches $P^*$ geometrically and
+attains it only in the limit, convergence is reported as the relative residual
+$|P_n - P^*|/P^*$ tested against a tolerance
+({{MARKET_CONVERGENCE_TOLERANCE}}), never by exact float equality. For the
+reference intel ($f$ = {{MARKET_FRACTION_REMOVED}}%, $\eta$ =
+{{MARKET_ELASTICITY}}, $P_0$ = ${{MARKET_REFERENCE_PRICE}}$) the gain resolves
+to the results in Section [Results].
 
 ## Vault defense: layered security scoring
 

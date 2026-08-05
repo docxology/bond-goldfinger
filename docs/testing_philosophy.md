@@ -2,38 +2,108 @@
 
 ## Principles
 
-1. **Real data + computation only — zero mocks.** No `MagicMock`,
-   `unittest.mock`, `mocker.patch`, or `create_autospec`. Deterministic fakes
-   (when needed at all) implement the *real* protocol.
-2. **Deterministic.** Fixed seeds, fixed inputs, asserted exact values /
-   closed-form hand-vectors. No untracked RNG, no wall-clock assertions.
-3. **Coverage-gated.** `--cov=src/goldfinger --cov-fail-under=90` (currently
-   ~97% line+branch). Tests do not count toward coverage.
-4. **Per-concept test files.** Each pure module has a matching
-   `test_<module>.py` exercising hand-vector values, invariants, inverse
-   round-trips, and every error branch.
+1. **Real data and real computation only — zero mocks.** No `MagicMock`,
+   `unittest.mock`, `mocker.patch`, or `create_autospec` appears anywhere in
+   this package. There is nothing to mock: the domain core is pure functions
+   over numbers and dicts, so every test calls the real thing. Where a test
+   needs a config file it writes a real one under `tmp_path`; where it needs a
+   figure it renders a real PNG; where it needs a CLI it runs a real
+   subprocess.
+2. **Deterministic.** Fixed inputs, fixed timestamps (`now=` is injected
+   wherever a wall clock would otherwise leak in), asserted closed-form or
+   hand-computed values. The mission declares a seed but draws no randomness,
+   so "deterministic" here means *exactly* reproducible, not
+   statistically stable.
+3. **Coverage-gated on the source, not the tests.** The gate is
+   `--cov=src --cov-fail-under=90`, measured on line **and** branch. The
+   currently measured figure lives in [`_generated/COUNTS.md`](_generated/COUNTS.md),
+   which is generated — do not restate it here or anywhere else in prose.
+4. **One test file per module.** Every module in `src/goldfinger/` has a
+   matching `tests/test_<module>.py`, plus two cross-cutting files.
+
+## Float comparison
+
+Closed-form results are compared with an explicit tolerance, never `==`, unless
+the value is exactly representable (a sum of halves, an integer count, a string
+verdict). The one place this mattered enough to change the source: corner
+convergence used to be tested with `trajectory[-1] == shocked_price`, which is
+false for every finite step count — a flag that could never be true. It is now
+`convergence_residual(...) <= CONVERGENCE_TOLERANCE`, and
+`test_reference_corner_never_attains_exact_equality` asserts the exact-equality
+form really does fail, so the tolerance check is known to be doing work.
+
+## Gates must be able to fail
+
+A gate that cannot fail is worse than no gate, because it reads as evidence.
+Two gates in this suite therefore ship with an explicit positive control:
+
+- `test_no_computed_result_value_is_hardcoded_in_the_prose` scans the numbered
+  manuscript sections with all `{{TOKEN}}`s stripped and fails if a computed
+  result value appears as a literal. `test_the_anti_hardcode_gate_can_actually_fail`
+  contaminates a copy of that prose with a pasted value and asserts the scan
+  catches it.
+- `test_a_truncated_trajectory_does_not_converge` proves the convergence check
+  returns `False` for a trajectory stopped early.
+
+Apply the same rule to anything added later: if you cannot describe the input
+that would turn a new assertion red, the assertion is decoration.
+
+## Testing beyond `src/`
+
+Some defects live between files, not inside one. `test_package_metadata.py`
+exists because the package version had drifted: the code said one thing and
+four metadata files said another, so every provenance record disagreed with
+every citation. No amount of unit testing on `src/` finds that. When a fact is
+declared in more than one file, write the test that compares them.
 
 ## What each file covers
 
-- `test_market_attack.py` — supply-shock math, hand optics, monotonicity,
-  tatonnement convergence/divergence, provenance determinism.
-- `test_vault_security.py` — weighted-average scores, product-rule
-  penetration, expected breach time, weakest-layer ranking, verdict
-  thresholds, marginal-improvement ordering.
-- `test_laser_physics.py` — energy hand-vector, power/time/thickness
-  round-trips, inverse power scaling, threat severity boundaries.
-- `test_mission.py` + `test_protocol_integration.py` — provider lifecycle,
-  determinism, protocol conformance, slug discovery, serialization round-trip,
-  gadget registration.
-- `test_manuscript_variables.py` — config loading, token completeness, and the
-  **live token cross-reference gate** (every `{{TOKEN}}` in `manuscript/[0-9]*.md`
-  must exist in `generate_variables()`).
-- `test_figures.py` — PNG render + determinism.
-- `test_scripts_smoke.py` — subprocess runs of the thin CLIs via
-  `sys.executable`, `cwd=project_root`.
+| File | Covers |
+|---|---|
+| `test_market_attack.py` | Supply-shock math, hand-computed optics, monotonicity, tâtonnement convergence and divergence, determinism |
+| `test_reserve_attack.py` | Shadow rate, attack time vs the gradual reserve floor, the suddenness gap, depreciation, and every feasibility guard |
+| `test_vault_security.py` | Weighted scores, product-rule penetration, expected breach time, weakest-layer ranking, verdict thresholds, marginal-improvement ordering |
+| `test_vault_threat_network.py` | Dijkstra path and effort, path validation, edge criticality, greedy hardening, deterministic tie-breaking |
+| `test_laser_physics.py` | Energy hand-vector, power/time/thickness round-trips, inverse power scaling, severity boundaries |
+| `test_laser_thermal.py` | Rayleigh range, defocusing, Carslaw–Jaeger surface temperature, melt time, effective burn range |
+| `test_mission.py` | Provider lifecycle, deterministic outcome, enriched result payload, gadget registration |
+| `test_protocol_integration.py` | The **frozen** surface: slug discovery, protocol conformance, serialization round-trip, `GADGETS` / `register_market_gadgets` presence |
+| `test_manuscript_variables.py` | Config loading, token completeness, and the live token cross-reference gate (every `{{TOKEN}}` in `manuscript/[0-9]*.md` must exist) |
+| `test_guards_and_contracts.py` | Every remaining type/value guard driven through a real bad argument, plus the self-description contracts and the anti-hardcode gate |
+| `test_package_metadata.py` | Version and identity agreement across `pyproject.toml`, `manuscript/config.yaml`, `CITATION.cff`, `.zenodo.json`, `codemeta.json`, the package, and the provenance string — plus the absence of fabricated DOIs and repository URLs |
+| `test_figures.py` | PNG render and byte-level determinism |
+| `test_scripts_smoke.py` | Subprocess runs of the thin CLIs and both generators via `sys.executable`, in a sandbox copy of the tree |
 
 ## Error branches
 
 Every `TypeError` / `ValueError` guard in the pure modules is exercised by an
-explicit test (out-of-range ratings, non-positive physics, invalid adjustment,
-empty layers, etc.), keeping line + branch coverage high through real calls.
+explicit test through a real call — out-of-range ratings, non-positive physics,
+negative distances, invalid adjustment coefficients, empty layer maps,
+non-numeric edge costs, malformed YAML. This is why branch coverage sits where
+it does: not because the guards are trivial, but because each one is driven.
+
+## The `no rated layer` case
+
+`weakest_layer` raises when *no* rated key appears in `LAYER_ORDER`. It used to
+also raise for a vault where every layer scored `1.0` — a perfectly valid
+input — because the search seeded its running minimum at `1.0` and used a
+strict `<`. That was a real defect, found by writing the all-perfect test
+first. Prefer writing the boundary case before the happy path.
+
+## Running
+
+```bash
+uv run pytest tests/ --cov=src --cov-fail-under=90     # the gate
+uv run pytest tests/test_vault_threat_network.py -v    # one module
+uv run pytest tests/ -k convergence -v                 # one behaviour
+```
+
+After a gated run, refresh the generated counts with the numbers you actually
+observed:
+
+```bash
+uv run python scripts/z_generate_counts.py --tests <N> --coverage <PCT>
+```
+
+Omit the flags and the file states the enforced gate instead — which is the
+correct output when nobody measured.

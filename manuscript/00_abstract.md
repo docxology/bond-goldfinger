@@ -15,20 +15,23 @@ lands a {{RESERVE_DEPRECIATION_PCT}}% post-float depreciation. On the
 ({{VAULT_VERDICT}} security, {{VAULT_PENETRATION_PCT}}% penetration given the
 weakest layer is the {{VAULT_WEAKEST}}); a network model finds a
 {{VAULT_MIN_EFFORT}}-effort minimum intrusion path through the secret tunnel
-and shows that a {{VAULT_EFFORT_RAISED}}-effort hardening budget raises the
-intruder's required effort. On the **laser front** a {{LASER_POWER_W}} W
+and shows that a {{VAULT_HARDENING_BUDGET}}-unit hardening budget raises the
+intruder's required effort to {{VAULT_HARDENED_EFFORT}}. On the
+**laser front** a {{LASER_POWER_W}} W
 continuous-wave beam burns a {{LASER_THICKNESS_MM}} mm steel plate in
 {{LASER_BURN_THROUGH_S}} s ({{LASER_SEVERITY}}) at range, and the Gaussian-beam
 thermal model sets its effective engagement range at {{LASER_EFFECTIVE_RANGE_M}} m.
 
 The cinema's fictional scheme is treated as a *quantitative modelling
-exercise*: six deterministic, infrastructure-free modules
-(`market_attack`, `reserve_attack`, `vault_security`, `vault_threat_network`,
-`laser_physics`, `laser_thermal`) formalize the economics of cornering and
-speculative attack, the reliability of layered and network defense, and the
-physics of laser penetration and heat conduction. Each is fully unit-tested on
-real computation with zero mocking, and every result is injected into this
-manuscript as a template variable so no metric is hand-authored. The package
+exercise*: {{GOLDFINGER_MODULE_COUNT}} deterministic, infrastructure-free
+modules (`market_attack`, `reserve_attack`, `vault_security`,
+`vault_threat_network`, `laser_physics`, `laser_thermal`) formalize the
+economics of cornering and speculative attack, the reliability of layered and
+network defense, and the physics of laser penetration and heat conduction.
+Each is fully unit-tested on real computation with zero mocking, and every
+result is injected into this manuscript as one of
+{{GOLDFINGER_TOKEN_COUNT}} template variables so no metric — not even a count
+of modules or figures — is hand-authored. The package
 implements the frozen BOND-API mission protocol, exposing a `MissionProvider`
 (film `goldfinger`, codename `GRAND SLAM`) that a fleet orchestrator can
 discover and drive through the brief–recon–plan–execute–debrief lifecycle.

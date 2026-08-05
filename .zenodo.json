@@ -6,18 +6,22 @@
       "affiliation": "Active Inference Institute"
     }
   ],
-  "title": "Goldfinger: GRAND SLAM — Special-Agent Mission Software",
-  "description": "PROJECT BOND film package modelling gold-market cornering, layered vault defense assessment, and laser threat physics from Goldfinger (1964) as deterministic, fully-tested scientific modules exposed via the frozen BOND-API MissionProvider protocol.",
+  "title": "Goldfinger: GRAND SLAM \u2014 Special-Agent Mission Software",
+  "description": "PROJECT BOND film package modelling Goldfinger (1964) as six deterministic, fully-tested scientific modules across three attack surfaces \u2014 gold-market cornering and a first-generation speculative attack on the gold peg; layered and network vault defense; scalar and thermal laser threat physics \u2014 exposed via the frozen BOND-API MissionProvider protocol.",
   "keywords": [
     "gold-market cornering",
     "supply shock price dynamics",
+    "speculative currency attack",
     "defense-in-depth security",
     "vault penetration assessment",
+    "shortest-path network hardening",
     "laser threat physics",
     "burn-through time",
+    "Gaussian beam propagation",
+    "transient heat conduction",
     "deterministic simulation"
   ],
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "upload_type": "software"
 }

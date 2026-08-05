@@ -26,10 +26,12 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, TypedDict
 
 __all__ = [
     "REFERENCE_GRAPH",
+    "REFERENCE_HARDENING",
+    "REFERENCE_TARGET",
     "VAULT_NODE_ORDER",
     "edge_criticality",
     "harden_network",
@@ -68,7 +70,24 @@ REFERENCE_GRAPH: dict[str, dict[str, float]] = {
     "gold_chamber": {"lock_room": 6.0, "secret_tunnel": 2.5},
 }
 
-NODE_ORDER: tuple[str, ...] = VAULT_NODE_ORDER
+#: The reference intrusion problem: from the outer perimeter to the gold.
+REFERENCE_TARGET: tuple[str, str] = ("perimeter", "gold_chamber")
+
+
+class _HardeningIntel(TypedDict):
+    """Typed shape of the reference hardening posture."""
+
+    budget: int
+    gain_per_unit: float
+
+
+#: Reference hardening posture — the defensive budget and the effort each unit
+#: buys. Single source of truth for the mission adapter, the manuscript token
+#: map, and the figures, so the three cannot report different postures.
+REFERENCE_HARDENING: _HardeningIntel = {
+    "budget": 10,
+    "gain_per_unit": 0.5,
+}
 
 
 def _require_node(graph: Mapping[str, Mapping[str, float]], node: str) -> None:
@@ -86,7 +105,8 @@ def _require_edge_cost(cost: float, label: str) -> float:
 
 def _node_key(node: str) -> tuple[int, str]:
     """Deterministic sort key: canonical order first, then lexicographic."""
-    return (NODE_ORDER.index(node) if node in NODE_ORDER else len(NODE_ORDER), node)
+    known = node in VAULT_NODE_ORDER
+    return (VAULT_NODE_ORDER.index(node) if known else len(VAULT_NODE_ORDER), node)
 
 
 def _ordered_nodes(graph: Mapping[str, Mapping[str, float]]) -> list[str]:
@@ -216,15 +236,15 @@ def harden_network(
             trial = {n: dict(raised[n]) for n in raised}
             trial[a][b] = _require_edge_cost(raised[a][b], "cost") + gain_per_unit
             trial[b][a] = _require_edge_cost(raised[b][a], "cost") + gain_per_unit
-            try:
-                effort, _ = minimum_effort_path(trial, source, target)
-            except ValueError:
-                continue  # hardening cannot disconnect an existing path here
+            # Raising an edge cost never changes the topology, so ``target``
+            # stays reachable and ``minimum_effort_path`` cannot raise here —
+            # the reachability invariant was established by ``before`` above.
+            effort, _ = minimum_effort_path(trial, source, target)
             if effort > best_effort:
                 best_effort = effort
                 best = (a, b)
         if best is None:
-            break  # nothing raised the minimum effort further; stop
+            break  # edgeless graph (e.g. source == target): nothing to harden
         a, b = best
         raised[a][b] = _require_edge_cost(raised[a][b], "cost") + gain_per_unit
         raised[b][a] = _require_edge_cost(raised[b][a], "cost") + gain_per_unit

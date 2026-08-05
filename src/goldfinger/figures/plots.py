@@ -35,6 +35,8 @@ from goldfinger.vault_security import (
 )
 from goldfinger.vault_threat_network import (
     REFERENCE_GRAPH,
+    REFERENCE_HARDENING,
+    REFERENCE_TARGET,
     harden_network,
     minimum_effort_path,
     path_effort,
@@ -203,9 +205,15 @@ def plot_reserve_crisis(output_dir: Path | None = None) -> Path:
 
 def plot_vault_network(output_dir: Path | None = None) -> Path:
     """Render the vault-zone graph: weak-path edge effort before/after hardening."""
-    source, target = "perimeter", "gold_chamber"
+    source, target = REFERENCE_TARGET
     effort, weak_path = minimum_effort_path(REFERENCE_GRAPH, source, target)
-    hardening = harden_network(REFERENCE_GRAPH, source, target, budget=10, gain_per_unit=0.5)
+    hardening = harden_network(
+        REFERENCE_GRAPH,
+        source,
+        target,
+        budget=REFERENCE_HARDENING["budget"],
+        gain_per_unit=REFERENCE_HARDENING["gain_per_unit"],
+    )
     labels = [f"{a}→{b}" for a, b in zip(weak_path, weak_path[1:], strict=False)]
     edge_costs = [
         path_effort(REFERENCE_GRAPH, weak_path[i : i + 2]) for i in range(len(weak_path) - 1)

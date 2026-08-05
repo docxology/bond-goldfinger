@@ -7,9 +7,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "goldfinger"
-version = "0.1.0"
+version = "0.2.0"
 license = {text = "MIT"}
-description = "Special-Agent mission software: gold-market cornering model, vault defense assessment, laser threat physics (GRAND SLAM)."
+description = "Special-Agent mission software: gold-market cornering and speculative peg attack, layered and network vault defense, scalar and thermal laser threat physics (GRAND SLAM)."
 authors = [
     {name = "Daniel Ari Friedman", email = "daniel@activeinference.institute"}
 ]

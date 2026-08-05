@@ -36,13 +36,20 @@ from dataclasses import dataclass
 from typing import TypedDict
 
 __all__ = [
+    "CONVERGENCE_TOLERANCE",
     "CornerResult",
+    "convergence_residual",
     "corner_valuation",
     "effective_supply",
+    "has_converged",
     "price_gain",
     "shocked_equilibrium_price",
     "simulate_corner",
 ]
+
+#: Relative residual at or below which a tâtonnement trajectory counts as
+#: converged. Shared by the mission adapter and the manuscript token map.
+CONVERGENCE_TOLERANCE: float = 1e-6
 
 
 def _positive(value: float, label: str, *, strict: bool = True) -> None:
@@ -162,6 +169,41 @@ def simulate_corner(
         gain=float(shocked / reference_price - 1.0),
         trajectory=tuple(trajectory),
     )
+
+
+def convergence_residual(result: CornerResult) -> float:
+    """Relative distance between the final tâtonnement price and ``P*``.
+
+    ``|P_n - P*| / P*``. Tâtonnement approaches the shocked equilibrium
+    geometrically but reaches it exactly only in the limit, so an
+    *exact-equality* convergence test is false by construction for any finite
+    step count. This residual is the honest quantity to threshold.
+
+    Args:
+        result: A :class:`CornerResult` from :func:`simulate_corner`.
+
+    Returns:
+        The non-negative relative residual of the trajectory's last point.
+    """
+    if not isinstance(result, CornerResult):
+        raise TypeError("result must be a CornerResult")
+    return abs(result.trajectory[-1] - result.shocked_price) / result.shocked_price
+
+
+def has_converged(result: CornerResult, tolerance: float = 1e-6) -> bool:
+    """Whether the tâtonnement trajectory settled within ``tolerance``.
+
+    Args:
+        result: A :class:`CornerResult` from :func:`simulate_corner`.
+        tolerance: Maximum acceptable relative residual (positive).
+
+    Returns:
+        ``True`` when :func:`convergence_residual` is at or below ``tolerance``.
+        A trajectory truncated too early — or an adjustment coefficient in
+        ``(1, 2)`` that oscillates — returns ``False``.
+    """
+    _positive(tolerance, "tolerance")
+    return convergence_residual(result) <= tolerance
 
 
 def corner_valuation(reference_price: float, quantity_seized: float) -> float:

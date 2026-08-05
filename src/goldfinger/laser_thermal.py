@@ -100,10 +100,7 @@ def thermal_surface_temperature(
     ambient: float,
 ) -> float:
     """Carslaw–Jaeger surface temperature (K) under constant flux at ``time``."""
-    _positive(
-        time,
-        "time",
-    )
+    _positive(time, "time")
     _positive(flux, "flux")
     _positive(conductivity, "conductivity")
     _positive(density, "density")
@@ -171,7 +168,14 @@ def effective_burn_range(
     ``threat_window`` seconds.
 
     Scans ``0 .. max_distance`` in ``step`` increments and returns the largest
-    distance whose melt time is within the threat window (``0.0`` if none is).
+    scanned distance whose melt time is within the threat window.
+
+    The return value ``0.0`` is deliberately two-valued and must be read with
+    :func:`melt_time_at_distance`: it means *either* "only the focal point
+    (0 m) burns within the window" *or* "no scanned distance burns within the
+    window at all". Callers that need to distinguish the two should evaluate
+    ``melt_time_at_distance(..., 0.0) <= threat_window``; the GRAND SLAM
+    reference beam melts at focus, so its ``0.0`` would mean focus-only.
     """
     _positive(conductivity, "conductivity")
     _positive(threat_window, "threat_window")

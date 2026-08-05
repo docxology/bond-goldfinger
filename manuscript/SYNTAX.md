@@ -30,7 +30,22 @@ prose as `@fig:label` (narrative) or `[@fig:label]` (parenthetical).
 | `fig:laser` | `output/figures/laser_burn_through.png` |
 | `fig:laser_engagement` | `output/figures/laser_engagement.png` |
 
+Each row must correspond to a renderer named in
+`goldfinger.figures.FIGURE_RENDERERS` and to a `{#fig:...}` anchor in
+`03_results.md`. Adding a renderer without adding both leaves an orphan.
+
 ## Citations
 
-BibTeX keys in `references.bib`, cited as `@key` / `[@key]`; the reference
-list is in `99_references.md`.
+BibTeX keys in `references.bib` (real BibTeX — it is merged into the
+compendium's unified bibliography by `bond-manuscript`), cited as `@key` /
+`[@key]`. The human-readable list is `99_references.md`, grouped by attack
+surface; the two must agree. Available keys:
+
+`walras1874elements`, `hicks1946value`, `kyle1985continuous`,
+`krugman1979model`, `flood1984collapsing`, `garcia2007design`,
+`dijkstra1959note`, `israeli2002shortest`, `steen2010laser`,
+`carslaw1959conduction`, `siegman1986lasers`, `bondapi2026protocol`.
+
+Every entry must be a source you can actually verify. A fabricated citation is
+a worse defect than a missing one — if you are not confident a reference is
+real, remove it.
