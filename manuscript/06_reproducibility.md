@@ -11,10 +11,22 @@ uv run python scripts/z_generate_manuscript_variables.py
 
 which rewrites `output/data/manuscript_variables.json`
 ({{GOLDFINGER_TOKEN_COUNT}} tokens) and the {{GOLDFINGER_FIGURE_COUNT}}
-concept figures under `output/figures/`. Because inputs are fixed, the computed
-result tokens (`MARKET_*`, `RESERVE_*`, `VAULT_*`, `LASER_*`) are stable; only
-the `GENERATION_TIMESTAMP` — and the `GOLDFINGER_VERSION_HASH` derived from
-the whole map — vary between runs.
+concept figures under `output/figures/`. Every persisted byte is a function of
+the committed tree alone, so running that command twice — on different days,
+on different machines — produces byte-identical files. Nothing in the token
+map reads a clock: the manuscript's date is the committed `paper.date` in
+`manuscript/config.yaml` (`MANUSCRIPT_DATE` = {{MANUSCRIPT_DATE}}), and
+`GOLDFINGER_VERSION_HASH` hashes the whole map, which makes it a content
+identifier rather than a run identifier.
+
+That property is enforced, not asserted:
+`tests/test_regeneration_determinism.py` copies the tree to a scratch
+directory, runs the real generator twice with a wall-clock gap between the
+runs, and compares every emitted byte — the JSON, all
+{{GOLDFINGER_FIGURE_COUNT}} figures, and the generated counts file. The same
+file carries a positive control that reintroduces a clock-derived value into
+the map and shows the comparison goes red, so the gate is known to be able to
+fail.
 
 The token count and figure count above are themselves generated, not typed:
 `GOLDFINGER_TOKEN_COUNT` is the length of the declared `GOLDFINGER_TOKENS`

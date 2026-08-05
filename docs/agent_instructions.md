@@ -49,8 +49,13 @@ defect even if it works.
 
 - **No mocks.** No `MagicMock`, `mocker.patch`, `unittest.mock`, or
   `create_autospec`. The domain core is pure functions; call them for real.
-- **Determinism.** Fixed inputs, no untracked RNG, no wall-clock dependence in
-  persisted results. Inject `now=` wherever a timestamp would otherwise leak.
+- **Determinism.** Fixed inputs, no untracked RNG, and no clock reachable from
+  a persisted artifact. Do not reintroduce a `now=` parameter: an injectable
+  clock still leaks on the default path, and pinned-`now` tests hid exactly
+  that defect here once. Dates come from `paper.date` in
+  `manuscript/config.yaml` (`MANUSCRIPT_DATE`, required, no default).
+  `tests/test_regeneration_determinism.py` regenerates twice across a
+  wall-clock gap and compares bytes.
 - **No hand-authored metrics in prose.** Every number in `manuscript/` arrives
   as a `{{TOKEN}}`; every number in `docs/` either cites
   `_generated/COUNTS.md` or describes the gate. Counts of modules, figures, and

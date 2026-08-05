@@ -15,7 +15,6 @@ Two jobs, both with real computation and no mocking:
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -53,7 +52,6 @@ from goldfinger.vault_threat_network import (
 )
 
 _PKG_ROOT = Path(__file__).resolve().parents[1]
-_FIXED_NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
 
 # A diamond graph on non-canonical node names: a→d costs 2.0 by two symmetric
 # routes, so removing either shortest-path edge leaves the effort unchanged.
@@ -212,18 +210,46 @@ def test_load_mission_config_rejects_a_non_mapping_document(tmp_path: Path) -> N
         load_mission_config(tmp_path)
 
 
-def test_generate_variables_tolerates_malformed_metadata_blocks(tmp_path: Path) -> None:
-    """Non-conforming paper/authors/keywords blocks degrade to defaults."""
+def test_generate_variables_tolerates_malformed_author_and_keyword_blocks(
+    tmp_path: Path,
+) -> None:
+    """Non-conforming authors/keywords blocks degrade to defaults."""
     _write(
         tmp_path,
-        'paper: "not-a-mapping"\nauthors: "not-a-list-of-mappings"\nkeywords: "not-a-list"\n',
+        'paper:\n  date: "2026-08-04"\nauthors: "not-a-list-of-mappings"\nkeywords: "not-a-list"\n',
     )
-    variables = generate_variables(project_root=tmp_path, now=_FIXED_NOW)
+    variables = generate_variables(project_root=tmp_path)
     assert variables["GOLDFINGER_TITLE"] == "Goldfinger: GRAND SLAM"
     assert variables["GOLDFINGER_AUTHOR"] == "Daniel Ari Friedman"
     assert variables["GOLDFINGER_KEYWORDS"] == ""
+    assert variables["MANUSCRIPT_DATE"] == "2026-08-04"
     # The computed result tokens are unaffected by broken identity metadata.
     assert float(variables["MARKET_PRICE_GAIN_PCT"]) > 25.0
+
+
+def test_generate_variables_rejects_a_paper_block_that_is_not_a_mapping(
+    tmp_path: Path,
+) -> None:
+    """A non-mapping ``paper:`` block degrades to empty — and then has no date.
+
+    The date is the one identity field with no default, because a defaulted
+    date would be a hand-authored literal masquerading as provenance.
+    """
+    _write(tmp_path, 'paper: "not-a-mapping"\n')
+    with pytest.raises(ValueError, match="must declare a non-empty paper.date"):
+        generate_variables(project_root=tmp_path)
+
+
+@pytest.mark.parametrize("body", ['paper:\n  version: "0.1.0"\n', 'paper:\n  date: "   "\n'])
+def test_generate_variables_requires_a_committed_manuscript_date(tmp_path: Path, body: str) -> None:
+    """Positive control for the no-clock rule: absent or blank date is fatal.
+
+    This is the branch that keeps a wall clock from creeping back in as a
+    "sensible default" the next time someone notices the token is missing.
+    """
+    _write(tmp_path, body)
+    with pytest.raises(ValueError, match="never a wall clock"):
+        generate_variables(project_root=tmp_path)
 
 
 # --------------------------------------------------------------------------
@@ -232,13 +258,13 @@ def test_generate_variables_tolerates_malformed_metadata_blocks(tmp_path: Path) 
 
 
 def test_declared_token_tuple_equals_the_generated_key_set() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     assert set(GOLDFINGER_TOKENS) == set(variables)
     assert len(GOLDFINGER_TOKENS) == len(set(GOLDFINGER_TOKENS)), "duplicate token declared"
 
 
 def test_token_count_token_matches_the_declared_tuple_length() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     assert variables["GOLDFINGER_TOKEN_COUNT"] == str(len(GOLDFINGER_TOKENS))
 
 
@@ -254,7 +280,7 @@ def test_concept_module_names_are_the_modules_actually_on_disk() -> None:
 
 
 def test_module_and_figure_count_tokens_are_derived_not_declared() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     assert variables["GOLDFINGER_MODULE_COUNT"] == str(len(concept_module_names()))
     assert variables["GOLDFINGER_FIGURE_COUNT"] == str(len(FIGURE_RENDERERS))
 
@@ -267,12 +293,12 @@ def test_figure_renderers_tuple_matches_the_exported_callables() -> None:
 
 
 def test_seed_token_matches_the_package_mission_seed() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     assert variables["GOLDFINGER_SEED"] == str(goldfinger.MISSION_SEED)
 
 
 def test_laser_severity_threshold_is_single_sourced() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     assert float(variables["LASER_SEVERITY_THRESHOLD_W"]) == goldfinger.LASER_SEVERITY_THRESHOLD_W
 
 
@@ -338,7 +364,7 @@ def test_converged_token_and_mission_outcome_agree() -> None:
     """The manuscript's convergence claim is the mission's convergence claim."""
     from goldfinger.mission import build_provider
 
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     provider = build_provider()
     outcome = provider.execute(provider.plan(provider.brief()))
     token_says = variables["MARKET_CONVERGED"] == "true"
@@ -368,7 +394,7 @@ _IDENTITY_TOKENS = frozenset(
         "GOLDFINGER_AFFILIATION",
         "GOLDFINGER_KEYWORDS",
         "GOLDFINGER_SEED",
-        "GENERATION_TIMESTAMP",
+        "MANUSCRIPT_DATE",
         "GOLDFINGER_VERSION_HASH",
     }
 )
@@ -509,7 +535,7 @@ def test_every_token_is_classified_exactly_once() -> None:
 
 def test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects() -> None:
     """The stated hole matches the mechanical rule — no quiet exemptions."""
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     rejected = {token for token in _COMPUTED_RESULT_TOKENS if not _is_scannable(variables[token])}
     assert rejected == set(_UNSCANNABLE_RESULT_TOKENS), (
         f"undocumented unscannable tokens: {sorted(rejected - set(_UNSCANNABLE_RESULT_TOKENS))}; "
@@ -519,7 +545,7 @@ def test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects() -> None:
 
 def test_the_scan_covers_every_scannable_computed_result() -> None:
     """The scan is the whole computed class minus the documented hole."""
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     scanned = set(_scanned_result_tokens(variables))
     assert scanned == _COMPUTED_RESULT_TOKENS - set(_UNSCANNABLE_RESULT_TOKENS)
     # Regression guard on the original defect: the gate shipped with 11 tokens
@@ -528,7 +554,7 @@ def test_the_scan_covers_every_scannable_computed_result() -> None:
 
 
 def test_no_computed_result_value_is_hardcoded_in_the_prose() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     prose = _prose_without_tokens()
     offenders = [
         f"{token}={variables[token]}"
@@ -539,7 +565,7 @@ def test_no_computed_result_value_is_hardcoded_in_the_prose() -> None:
 
 
 def test_counts_document_reports_the_gate_when_nothing_was_measured() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     document = render_counts_markdown(variables)
     assert "not measured in this run" in document
     assert "gate is **>=90%**" in document
@@ -549,7 +575,7 @@ def test_counts_document_reports_the_gate_when_nothing_was_measured() -> None:
 
 
 def test_counts_document_reports_measurements_when_they_are_supplied() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     document = render_counts_markdown(variables, tests_collected=151, coverage_percent=99.5)
     assert "**151 collected**" in document
     assert "**99.50%**" in document
@@ -557,7 +583,7 @@ def test_counts_document_reports_measurements_when_they_are_supplied() -> None:
 
 
 def test_counts_renderer_refuses_an_incomplete_variable_map() -> None:
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     del variables["VAULT_SCORE"]
     with pytest.raises(KeyError, match="VAULT_SCORE"):
         render_counts_markdown(variables)
@@ -572,7 +598,7 @@ def test_generated_counts_file_matches_a_fresh_render() -> None:
     counts_path = _PKG_ROOT / "docs" / "_generated" / "COUNTS.md"
     assert counts_path.is_file(), "docs/_generated/COUNTS.md must be committed"
     committed = counts_path.read_text(encoding="utf-8")
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     fresh = render_counts_markdown(variables)
     derived = [
         line
@@ -592,7 +618,7 @@ def test_the_anti_hardcode_gate_can_actually_fail() -> None:
     instance because its value is a substring the stripper removes) would show
     up here rather than sitting in the list looking like coverage.
     """
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     base = _prose_without_tokens()
     scanned = _scanned_result_tokens(variables)
     assert scanned, "expected at least one scannable computed result"
@@ -604,7 +630,7 @@ def test_the_anti_hardcode_gate_can_actually_fail() -> None:
 
 def test_the_anti_hardcode_gate_covers_the_preamble_file() -> None:
     """Positive control for the widened file set: a paste in the preamble is caught."""
-    variables = generate_variables(project_root=_PKG_ROOT, now=_FIXED_NOW)
+    variables = generate_variables(project_root=_PKG_ROOT)
     preamble = _PKG_ROOT / "manuscript" / "preamble.md"
     assert preamble in manuscript_prose_paths(_PKG_ROOT)
     contaminated = re.sub(

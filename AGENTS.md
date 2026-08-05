@@ -69,8 +69,17 @@ the discovery contract. `tests/test_protocol_integration.py` is the tripwire.
   `create_autospec`). Real data and real computation only — the domain core is
   pure functions, so there is nothing to mock.
 - Deterministic: seed `MISSION_SEED` declared in `__init__.py` (no random draws
-  are made), no untracked RNG, no wall-clock in persisted results. Inject `now=`
-  wherever a timestamp would otherwise leak.
+  are made), no untracked RNG, **no clock anywhere in a persisted artifact**.
+  Do not add a `now=` parameter to buy determinism back — an injectable clock
+  is still a clock, and the injection sites are exactly where the leak hides
+  (that is how `GENERATION_TIMESTAMP` survived a full suite: every test pinned
+  `now=`, so nothing ever observed the default path). Dates come from committed
+  config — `paper.date` in `manuscript/config.yaml`, surfaced as
+  `MANUSCRIPT_DATE`, required with no default. The rule is enforced by
+  `tests/test_regeneration_determinism.py`, which runs the real generator CLIs
+  twice across a wall-clock gap in a scratch copy and compares every byte, and
+  carries a positive control that reintroduces the clock and shows the
+  comparison go red.
 - **No hand-authored metrics anywhere.** Manuscript numbers are `{{TOKEN}}`s
   from `manuscript_variables.py`; doc numbers cite `docs/_generated/COUNTS.md`
   or describe the gate. Counts of modules, figures, and tokens are numbers too

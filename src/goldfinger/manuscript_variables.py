@@ -14,9 +14,14 @@ Three *structural* tokens are derived rather than declared:
 keeps the manuscript's own self-description from drifting when modules,
 figures, or tokens are added.
 
-Determinism: ``generate_variables`` accepts a ``now`` override (the script
-passes ``None`` and the wall clock is used only for the generation timestamp,
-which is expected to vary run to run).
+Determinism: the map is a pure function of the committed tree. There is no
+clock anywhere in this module — the manuscript's own date is the committed
+``paper.date`` in ``manuscript/config.yaml``, so regenerating the token map
+rewrites the persisted JSON byte for byte, including
+``GOLDFINGER_VERSION_HASH`` (which hashes the whole map and would otherwise
+have been a run identifier rather than a content identifier).
+``tests/test_regeneration_determinism.py`` runs the real generator twice in a
+sandbox copy of the tree and compares every output byte.
 """
 
 from __future__ import annotations
@@ -24,7 +29,6 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -140,12 +144,45 @@ def _fmt(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}"
 
 
+def _manuscript_date(paper: Mapping[str, Any]) -> str:
+    """The manuscript's declared date, read from committed config.
+
+    Deliberately *not* a clock. An earlier revision stamped
+    ``datetime.now(timezone.utc)`` into this map, which meant the persisted
+    ``output/data/manuscript_variables.json`` (and the version hash derived
+    from it) changed on every run while the surrounding prose claimed
+    persisted artifacts carry no wall-clock dependence. The date is a property
+    of the manuscript, so it lives in ``manuscript/config.yaml`` under
+    ``paper.date`` and is required — there is no default to fall back to,
+    because a defaulted date would be a hand-authored literal.
+
+    Args:
+        paper: The ``paper:`` mapping from ``manuscript/config.yaml``.
+
+    Returns:
+        The declared date as a string.
+
+    Raises:
+        ValueError: If ``paper.date`` is absent or empty.
+    """
+    raw = paper.get("date")
+    if raw is None or str(raw).strip() == "":
+        raise ValueError(
+            "manuscript/config.yaml must declare a non-empty paper.date — the "
+            "manuscript date is a committed value, never a wall clock"
+        )
+    return str(raw).strip()
+
+
 def generate_variables(
     require_analysis_outputs: bool = True,
     project_root: Path | None = None,
-    now: datetime | None = None,
 ) -> dict[str, str]:
     """Compute the full ``{{TOKEN}} → value`` map for the manuscript.
+
+    Pure with respect to the committed tree: given the same ``project_root``
+    the returned map is byte-identical on every call, on every day. No clock,
+    no environment, no filesystem timestamp enters it.
 
     Args:
         require_analysis_outputs: Kept for signature parity; GRAND SLAM computes
@@ -153,8 +190,6 @@ def generate_variables(
             values are always available.
         project_root: Project root; defaults to three levels above this module
             (``src/goldfinger/`` under the package root).
-        now: Timestamp override for the ``GENERATION_TIMESTAMP`` token
-            (defaults to the current UTC time).
     """
     root = project_root or Path(__file__).resolve().parents[2]
     config = load_mission_config(root)
@@ -249,7 +284,7 @@ def generate_variables(
     )
     z_r = rayleigh_range(b["waist"], b["wavelength"])
 
-    stamp = (now or datetime.now(timezone.utc)).strftime("%Y-%m-%d %H:%M:%S UTC")
+    manuscript_date = _manuscript_date(paper)
     version = str(paper.get("version", __version__))
 
     variables: dict[str, str] = {
@@ -258,6 +293,7 @@ def generate_variables(
         "GOLDFINGER_CODENAME": "GRAND SLAM",
         "GOLDFINGER_FILM": "Goldfinger (1964)",
         "GOLDFINGER_VERSION": version,
+        "MANUSCRIPT_DATE": manuscript_date,
         "GOLDFINGER_AUTHOR": str(author.get("name", "Daniel Ari Friedman")),
         "GOLDFINGER_ORCID": str(author.get("orcid", "")),
         "GOLDFINGER_AFFILIATION": str(author.get("affiliation", "Active Inference Institute")),
@@ -330,7 +366,6 @@ def generate_variables(
         "LASER_RAYLEIGH_RANGE_M": _fmt(z_r, 2),
         # Environment / reproducibility
         "GOLDFINGER_SEED": str(MISSION_SEED),
-        "GENERATION_TIMESTAMP": stamp,
     }
     variables["GOLDFINGER_VERSION_HASH"] = _sha8(json.dumps(variables, sort_keys=True))
     return variables
@@ -354,6 +389,7 @@ GOLDFINGER_TOKENS: tuple[str, ...] = (
     "GOLDFINGER_CODENAME",
     "GOLDFINGER_FILM",
     "GOLDFINGER_VERSION",
+    "MANUSCRIPT_DATE",
     "GOLDFINGER_AUTHOR",
     "GOLDFINGER_ORCID",
     "GOLDFINGER_AFFILIATION",
@@ -420,7 +456,6 @@ GOLDFINGER_TOKENS: tuple[str, ...] = (
     "LASER_RAYLEIGH_RANGE_M",
     # Environment / reproducibility
     "GOLDFINGER_SEED",
-    "GENERATION_TIMESTAMP",
     "GOLDFINGER_VERSION_HASH",
 )
 

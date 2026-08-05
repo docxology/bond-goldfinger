@@ -66,10 +66,12 @@ ambient of `{{LASER_AMBIENT_K}}` K, engaged within a
 The mission declares a fixed seed of `{{GOLDFINGER_SEED}}` and performs **no**
 random draws — the seed is recorded in provenance so a replay is auditable,
 not because any sampling occurs. Persisted artifacts carry no wall-clock
-dependence (`wall_time_s = 0.0` in provenance). The one deliberately varying
-value is the `GENERATION_TIMESTAMP` token (currently
-{{GENERATION_TIMESTAMP}}) and the `GOLDFINGER_VERSION_HASH` derived from the
-full token map. Figure output is byte-deterministic for fixed inputs:
+dependence at all (`wall_time_s = 0.0` in provenance; no clock in the token
+map). The manuscript's date is the committed `paper.date` from
+`manuscript/config.yaml` — `MANUSCRIPT_DATE` = {{MANUSCRIPT_DATE}} — so
+`GOLDFINGER_VERSION_HASH`, which hashes the full token map, identifies the
+content rather than the run and is stable across regenerations. Figure output
+is byte-deterministic for fixed inputs:
 `tests/test_figures.py` renders **every** exported renderer twice — into two
 separate directories and again over the same path — and compares the bytes,
 parametrised over `figures.FIGURE_RENDERERS` so a renderer added later is

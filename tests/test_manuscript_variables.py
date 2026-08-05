@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -28,6 +27,7 @@ def _write_config(root: Path) -> Path:
         '  title: "Goldfinger: GRAND SLAM"\n'
         '  subtitle: "Special-Agent Mission Software"\n'
         '  version: "0.1.0"\n'
+        '  date: "2026-08-04"\n'
         "authors:\n"
         '  - name: "Daniel Ari Friedman"\n'
         '    orcid: "0000-0001-6232-9096"\n'
@@ -47,24 +47,23 @@ def test_load_mission_config_missing_raises(tmp_path: Path) -> None:
 
 def test_generate_variables_uses_provided_root(tmp_path: Path) -> None:
     root = _write_config(tmp_path)
-    fixed = datetime(2026, 8, 4, 12, 0, 0, tzinfo=timezone.utc)
-    variables = generate_variables(require_analysis_outputs=True, project_root=root, now=fixed)
+    variables = generate_variables(require_analysis_outputs=True, project_root=root)
     assert variables["GOLDFINGER_TITLE"] == "Goldfinger: GRAND SLAM"
     assert variables["GOLDFINGER_CODENAME"] == "GRAND SLAM"
     assert variables["GOLDFINGER_VERSION"] == "0.1.0"
-    assert variables["GENERATION_TIMESTAMP"] == "2026-08-04 12:00:00 UTC"
+    assert variables["MANUSCRIPT_DATE"] == "2026-08-04"
 
 
 def test_generate_variables_all_tokens_present(tmp_path: Path) -> None:
     root = _write_config(tmp_path)
-    variables = generate_variables(project_root=root, now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+    variables = generate_variables(project_root=root)
     for token in GOLDFINGER_TOKENS:
         assert token in variables
 
 
 def test_generate_variables_computed_metrics(tmp_path: Path) -> None:
     root = _write_config(tmp_path)
-    variables = generate_variables(project_root=root, now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+    variables = generate_variables(project_root=root)
     # Market: 30% supply cut at elasticity 1.25 -> positive double-digit gain.
     assert float(variables["MARKET_PRICE_GAIN_PCT"]) > 25.0
     assert float(variables["MARKET_SHOCKED_PRICE"]) > float(variables["MARKET_REFERENCE_PRICE"])
@@ -77,9 +76,8 @@ def test_generate_variables_computed_metrics(tmp_path: Path) -> None:
 
 def test_generate_variables_version_hash_is_stable(tmp_path: Path) -> None:
     root = _write_config(tmp_path)
-    fixed = datetime(2026, 1, 1, tzinfo=timezone.utc)
-    a = generate_variables(project_root=root, now=fixed)
-    b = generate_variables(project_root=root, now=fixed)
+    a = generate_variables(project_root=root)
+    b = generate_variables(project_root=root)
     assert a["GOLDFINGER_VERSION_HASH"] == b["GOLDFINGER_VERSION_HASH"]
 
 
@@ -90,9 +88,7 @@ def test_all_manuscript_tokens_are_generated_live() -> None:
     (:func:`manuscript_prose_paths`). Guide files legitimately show literal
     ``{{TOKEN}}`` placeholders and are excluded.
     """
-    variables = generate_variables(
-        project_root=_PKG_ROOT, now=datetime(2026, 1, 1, tzinfo=timezone.utc)
-    )
+    variables = generate_variables(project_root=_PKG_ROOT)
     prose = manuscript_prose_paths(_PKG_ROOT)
     assert prose, "expected rendered manuscript files to exist"
     tokens: set[str] = set()
@@ -127,9 +123,7 @@ def test_the_live_token_gate_can_actually_fail_on_the_preamble() -> None:
     Reads the committed preamble, appends a token that is not generated, and
     shows the same membership check the gate performs now reports it.
     """
-    variables = generate_variables(
-        project_root=_PKG_ROOT, now=datetime(2026, 1, 1, tzinfo=timezone.utc)
-    )
+    variables = generate_variables(project_root=_PKG_ROOT)
     preamble = (_PKG_ROOT / "manuscript" / "preamble.md").read_text(encoding="utf-8")
     contaminated = preamble + "\nversion {{GOLDFINGER_VERSIOM}}\n"
     found = set(re.findall(r"\{\{([A-Z0-9_]+)\}\}", contaminated))
