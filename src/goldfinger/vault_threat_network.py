@@ -98,6 +98,8 @@ def _require_node(graph: Mapping[str, Mapping[str, float]], node: str) -> None:
 def _require_edge_cost(cost: float, label: str) -> float:
     if isinstance(cost, bool) or not isinstance(cost, (int, float)):
         raise TypeError(f"{label} must be a number")
+    if not math.isfinite(cost):
+        raise ValueError(f"{label} must be finite")
     if cost < 0:
         raise ValueError(f"{label} must be non-negative")
     return float(cost)
@@ -222,6 +224,7 @@ def harden_network(
     if (
         isinstance(gain_per_unit, bool)
         or not isinstance(gain_per_unit, (int, float))
+        or not math.isfinite(gain_per_unit)
         or gain_per_unit <= 0
     ):
         raise ValueError("gain_per_unit must be a positive number")

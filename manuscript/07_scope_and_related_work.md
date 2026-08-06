@@ -31,8 +31,11 @@ cannot be trusted.
   It has no detection/response dynamics, no intruder uncertainty about the
   graph, and no defender response during the intrusion. The hardening
   allocation is a *greedy* approximation to shortest-path improvement, which
-  is not guaranteed optimal — it is reported as a lower bound on achievable
-  effort lift.
+  is not guaranteed optimal in general. On the reference graph the gap is
+  measured, not only disclaimed: an exhaustive enumeration at a small
+  verification budget ({{VAULT_VERIFY_BUDGET}} units) shows the greedy
+  allocation achieves the optimal lift ({{VAULT_VERIFY_OPTIMAL_LIFT}}, greedy
+  matches optimal: {{VAULT_GREEDY_MATCHES_OPTIMAL}}) — see Results.
 - **Laser — scalar** (`laser_physics`) is a thermal energy-balance
   approximation. It neglects plasma shielding, radiative and convective
   losses, and latent heat of fusion, so burn-through times are

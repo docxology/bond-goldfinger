@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from goldfinger.mission import GADGETS, MissionProvider, build_provider, register_market_gadgets
@@ -114,3 +116,44 @@ def test_register_market_gadgets_is_idempotent() -> None:
 
 def test_build_provider_returns_mission_provider() -> None:
     assert isinstance(build_provider(), MissionProvider)
+
+
+def test_persist_grand_slam_record_round_trips_and_verifies(tmp_path: Path) -> None:
+    """E3: the persisted record is written, loadable, and provably consistent.
+
+    The outcome is persisted via ``bond_utilities.mission_io`` and read back
+    with ``verify_provenance`` — the fleet's persistence surface — proving the
+    between-process audit trail survives. Determinism is asserted separately:
+    the record carries no wall clock (a committed placeholder), so two writes
+    are byte-identical.
+    """
+    from goldfinger.mission import persist_grand_slam_record
+
+    provider = build_provider()
+    outcome = provider.execute(provider.plan(provider.brief()))
+    path = tmp_path / "record.json"
+    written = persist_grand_slam_record(outcome, path)
+    assert written == path
+
+    from bond_utilities.mission_io import load_record, verify_provenance
+
+    record = load_record(path)
+    assert verify_provenance(record)
+    assert record["mission_id"] == "goldfinger-grand-slam"
+    assert record["codename"] == "GRAND SLAM"
+    assert record["outcomes"]["results"]["steps_completed"] == 7
+    # No wall clock in a persisted artifact: started_at is the pinned sentinel.
+    assert record["started_at"] == "committed-tree"
+
+
+def test_persist_grand_slam_record_is_byte_deterministic(tmp_path: Path) -> None:
+    """E3 positive control: no wall clock means byte-identical records."""
+    from goldfinger.mission import persist_grand_slam_record
+
+    provider = build_provider()
+    outcome = provider.execute(provider.plan(provider.brief()))
+    a = tmp_path / "a.json"
+    b = tmp_path / "b.json"
+    persist_grand_slam_record(outcome, a)
+    persist_grand_slam_record(outcome, b)
+    assert a.read_bytes() == b.read_bytes()

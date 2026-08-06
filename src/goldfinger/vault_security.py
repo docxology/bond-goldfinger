@@ -164,6 +164,8 @@ def expected_breach_time(
 def _positive(value: float, label: str) -> None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError(f"{label} must be a number")
+    if not math.isfinite(value):
+        raise ValueError(f"{label} must be finite")
     if value <= 0:
         raise ValueError(f"{label} must be positive")
 

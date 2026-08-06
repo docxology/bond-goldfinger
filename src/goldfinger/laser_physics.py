@@ -33,6 +33,7 @@ deterministic, and infrastructure-free.
 
 from __future__ import annotations
 
+import math
 from typing import TypedDict
 
 __all__ = [
@@ -51,6 +52,8 @@ THREAT_LEVELS: tuple[str, ...] = ("trivial", "serious", "critical")
 def _positive(value: float, label: str) -> None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError(f"{label} must be a number")
+    if not math.isfinite(value):
+        raise ValueError(f"{label} must be finite")
     if value <= 0:
         raise ValueError(f"{label} must be positive")
 

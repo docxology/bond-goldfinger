@@ -93,3 +93,52 @@ def test_deterministic_provenance() -> None:
     o2 = provider.execute(provider.plan(provider.brief()))
     assert o1.provenance.input_hash == o2.provenance.input_hash
     assert o1.provenance.seed == o2.provenance.seed
+    # The input hash is a real fingerprint of the reference intel, not a
+    # hand-typed literal: it must equal the canonical fingerprint of the parts
+    # the execute() helpers actually consume, and a one-value edit to any
+    # constant must change it (V1 positive control).
+    assert o1.provenance.input_hash != "goldfinger-grand-slam-input-v2"
+    assert o1.provenance.input_hash == _fingerprint_of_shipped_intel()
+
+
+def _shipped_intel_parts():
+    from goldfinger.laser_physics import REFERENCE_PHYSICS
+    from goldfinger.laser_thermal import REFERENCE_BEAM
+    from goldfinger.market_attack import REFERENCE_MODEL
+    from goldfinger.reserve_attack import REFERENCE_ATTACK
+    from goldfinger.vault_security import REFERENCE_RATINGS
+    from goldfinger.vault_threat_network import (
+        REFERENCE_GRAPH,
+        REFERENCE_HARDENING,
+        REFERENCE_TARGET,
+    )
+
+    return (
+        REFERENCE_MODEL,
+        REFERENCE_ATTACK,
+        REFERENCE_RATINGS,
+        REFERENCE_GRAPH,
+        REFERENCE_HARDENING,
+        REFERENCE_TARGET,
+        REFERENCE_PHYSICS,
+        REFERENCE_BEAM,
+    )
+
+
+def _fingerprint_of_shipped_intel() -> str:
+    from bond_api.capabilities import fingerprint
+
+    return fingerprint(*_shipped_intel_parts())
+
+
+def test_input_hash_is_sensitive_to_any_constant_edit() -> None:
+    """Positive control for C1: perturbing one constant changes the hash."""
+    from bond_api.capabilities import fingerprint
+
+    from goldfinger.market_attack import REFERENCE_MODEL
+
+    perturbed = dict(REFERENCE_MODEL)
+    perturbed["elasticity"] = 1.5  # a single one-value change anywhere
+    parts = list(_shipped_intel_parts())
+    parts[0] = perturbed
+    assert fingerprint(*parts) != fingerprint(*_shipped_intel_parts())

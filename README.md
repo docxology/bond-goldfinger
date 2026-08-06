@@ -92,11 +92,11 @@ uv sync --extra dev                                    # deps incl. the bond-api
 uv run python scripts/brief.py                         # mission brief
 uv run python scripts/recon.py "survey the vault"      # recon findings
 uv run python scripts/plan.py                          # ordered plan steps
-uv run python scripts/execute.py                       # all six models, with provenance
+uv run python scripts/execute.py                       # all six models, with provenance (also writes output/data/grand_slam_record.json)
 uv run python scripts/debrief.py                       # full lifecycle + lessons
 
 uv run python scripts/z_generate_manuscript_variables.py   # tokens + figures
-uv run python scripts/z_generate_counts.py                 # docs/_generated/COUNTS.md
+uv run python scripts/z_generate_counts.py --tests <N> --coverage <PCT>   # docs/_generated/COUNTS.md (bare form drops the measured lines)
 ```
 
 The six concept modules import standalone without `bond-api`; only

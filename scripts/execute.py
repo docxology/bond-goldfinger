@@ -15,13 +15,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))  # noqa: E402
 
-from goldfinger.mission import build_provider  # noqa: E402
+from goldfinger.mission import build_provider, persist_grand_slam_record  # noqa: E402
 
 
 def main() -> None:
     provider = build_provider()
     plan = provider.plan(provider.brief())
     outcome = provider.execute(plan)
+    # E3: persist the outcome as a deterministic, verifiable mission record.
+    record_path = Path(__file__).resolve().parents[1] / "output" / "data" / "grand_slam_record.json"
+    persist_grand_slam_record(outcome, record_path)
     results = outcome.results
     corner = results["corner"]
     reserve = results["reserve"]
@@ -61,6 +64,7 @@ def main() -> None:
         f"  provenance: {outcome.provenance.package_version} seed={outcome.provenance.seed} "
         f"hash={outcome.provenance.input_hash}"
     )
+    print(f"  record: wrote {record_path}")
 
 
 if __name__ == "__main__":

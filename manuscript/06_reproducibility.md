@@ -59,9 +59,14 @@ mocking framework anywhere.
 - Result metrics in the prose are injected by
   `src/goldfinger/manuscript_variables.py` from the module `REFERENCE_*`
   constants; do not hardcode numbers in prose, including counts of modules,
-  figures, tokens, or tests. The hardcode scan cannot police the count and
-  category tokens (their values are too short or too word-like to search for),
-  so that part of the rule is enforced by review, not by a gate.
+  figures, tokens, or tests. The hardcode scan cannot police the exact-value
+  count and category tokens (their values are too short or too word-like to
+  search for), so exact-value enforcement of those rests on review. But a
+  **fleet or sibling-package count** — a number this package can neither derive
+  nor gate — is caught by a lexical gate that rejects digit-plus-noun
+  constructions such as a digit bound to a fleet/suite noun (see
+  `tests/test_guards_and_contracts.py`), with a positive control proving the
+  gate can fail.
 - The pure domain modules must remain infrastructure-free and importable
   without `bond-api` (`mission.py` is the only module that imports it).
 - Reference parameters live in exactly one place — the module `REFERENCE_*`

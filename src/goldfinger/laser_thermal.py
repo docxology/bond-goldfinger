@@ -31,10 +31,27 @@ The module is pure (no I/O), deterministic, and infrastructure-free (stdlib
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import TypedDict
+
+
+@dataclass(frozen=True)
+class BurnRangeResult:
+    """The effective burn range and whether the beam melts at focus.
+
+    The range alone is two-valued: ``range_m == 0.0`` means *either* "only the
+    focal point melts within the window" *or* "no scanned distance melts". The
+    explicit ``burns_at_focus`` flag disambiguates, so a caller needs no second
+    melt-time evaluation to interpret a zero range.
+    """
+
+    range_m: float
+    burns_at_focus: bool
+
 
 __all__ = [
     "REFERENCE_BEAM",
+    "BurnRangeResult",
     "effective_burn_range",
     "melt_time_at_distance",
     "power_density",
@@ -48,6 +65,8 @@ __all__ = [
 def _positive(value: float, label: str) -> None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError(f"{label} must be a number")
+    if not math.isfinite(value):
+        raise ValueError(f"{label} must be finite")
     if value <= 0:
         raise ValueError(f"{label} must be positive")
 
@@ -55,6 +74,8 @@ def _positive(value: float, label: str) -> None:
 def _non_negative(value: float, label: str) -> None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError(f"{label} must be a number")
+    if not math.isfinite(value):
+        raise ValueError(f"{label} must be finite")
     if value < 0:
         raise ValueError(f"{label} must be non-negative")
 
@@ -163,45 +184,44 @@ def effective_burn_range(
     threat_window: float,
     max_distance: float = 200.0,
     step: float = 1.0,
-) -> float:
-    """Greatest distance (m) at which the beam melts the target within
-    ``threat_window`` seconds.
+) -> BurnRangeResult:
+    """Return the burn range and whether the beam melts at focus.
 
-    Scans ``0 .. max_distance`` in ``step`` increments and returns the largest
-    scanned distance whose melt time is within the threat window.
-
-    The return value ``0.0`` is deliberately two-valued and must be read with
-    :func:`melt_time_at_distance`: it means *either* "only the focal point
-    (0 m) burns within the window" *or* "no scanned distance burns within the
-    window at all". Callers that need to distinguish the two should evaluate
-    ``melt_time_at_distance(..., 0.0) <= threat_window``; the GRAND SLAM
-    reference beam melts at focus, so its ``0.0`` would mean focus-only.
+    Scans ``0 .. max_distance`` in ``step`` increments and returns a
+    :class:`BurnRangeResult` whose ``range_m`` is the largest scanned distance
+    whose melt time is within the threat window. The companion ``burns_at_focus``
+    flag carries whether the focal point (0 m) melts within the window, so a
+    zero ``range_m`` is never ambiguous: focus-only melting yields
+    ``(0.0, True)`` and no melting anywhere in the window yields
+    ``(0.0, False)`` — a distinction the bare float return could not express.
     """
     _positive(conductivity, "conductivity")
     _positive(threat_window, "threat_window")
     _non_negative(max_distance, "max_distance")
     _positive(step, "step")
+
+    def _melt(d: float) -> float:
+        return melt_time_at_distance(
+            power,
+            waist,
+            wavelength,
+            d,
+            absorptivity,
+            conductivity,
+            density,
+            specific_heat,
+            melt_temp,
+            ambient,
+        )
+
+    burns_at_focus = _melt(0.0) <= threat_window
     burn_distance = 0.0
     distance = 0.0
     while distance <= max_distance:
-        if (
-            melt_time_at_distance(
-                power,
-                waist,
-                wavelength,
-                distance,
-                absorptivity,
-                conductivity,
-                density,
-                specific_heat,
-                melt_temp,
-                ambient,
-            )
-            <= threat_window
-        ):
+        if _melt(distance) <= threat_window:
             burn_distance = distance
         distance += step
-    return float(burn_distance)
+    return BurnRangeResult(range_m=float(burn_distance), burns_at_focus=burns_at_focus)
 
 
 class _BeamIntel(TypedDict):

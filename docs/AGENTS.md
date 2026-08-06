@@ -51,7 +51,7 @@ The package root carries `README.md` (what this package is and how to run it),
 
 ```bash
 uv run pytest tests/ --cov=src --cov-fail-under=90
-uv run python scripts/z_generate_counts.py          # if anything structural moved
+uv run python scripts/z_generate_counts.py --tests <N> --coverage <PCT>   # if anything structural moved (bare form drops the measured lines)
 rg -n "template[_]code_project" .                   # expect zero hits
 git status                                          # expect clean after commit
 ```

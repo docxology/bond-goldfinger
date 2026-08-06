@@ -92,6 +92,12 @@ The BOND-API `MissionProvider` (`src/goldfinger/mission.py`) wraps all
 (`market_corner`, `reserve_attack`, `vault_defense`, `vault_hardening`,
 `laser_threat`, `laser_thermal`) with a module-level `GadgetRegistry`. It is
 discoverable by slug `goldfinger` on `sys.path` and drives the full
-brief–recon–plan–execute–debrief lifecycle with deterministic provenance. The
-adapter's public shape is frozen across phases; the mission internals (assets,
-plan steps, outcome results, lessons) are what deepen.
+brief–recon–plan–execute–debrief lifecycle with deterministic provenance,
+and persists the outcome as a schema-validated mission record (via
+`bond-utilities`'s `record_provenance_outcome`) whose `input_hash` is a real
+fingerprint of the reference intel, not a hand-typed literal — so two outcomes
+from unchanged constants carry identical provenance and a one-value edit to
+any constant is visible in the hash. The record writes no wall clock (its
+`started_at` is a committed sentinel), so it is byte-identical on every run.
+The adapter's public shape is frozen across phases; the mission internals
+(assets, plan steps, outcome results, lessons) are what deepen.

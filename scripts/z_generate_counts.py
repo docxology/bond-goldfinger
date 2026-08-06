@@ -10,7 +10,7 @@ Test count and coverage are *measurements*, not derivations: pass them in from
 a real gate run, or omit them and the generated file states the enforced gate
 instead of a number nobody measured.
 
-    uv run python scripts/z_generate_counts.py --tests 151 --coverage 100.0
+    uv run python scripts/z_generate_counts.py --tests <N> --coverage <PCT>
 """
 
 from __future__ import annotations

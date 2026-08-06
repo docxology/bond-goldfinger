@@ -27,6 +27,7 @@ sandbox copy of the tree and compares every output byte.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 from collections.abc import Mapping
 from pathlib import Path
@@ -68,6 +69,7 @@ from goldfinger.vault_threat_network import (
     REFERENCE_GRAPH,
     REFERENCE_HARDENING,
     REFERENCE_TARGET,
+    _ordered_edges,
     edge_criticality,
     harden_network,
     minimum_effort_path,
@@ -256,6 +258,12 @@ def generate_variables(
         gain_per_unit=REFERENCE_HARDENING["gain_per_unit"],
     )
     critical_count = len(edge_criticality(REFERENCE_GRAPH, source, target))
+    verify_budget, verify_optimal_lift, greedy_matches_optimal = _greedy_optimal_verification(
+        REFERENCE_GRAPH,
+        source,
+        target,
+        REFERENCE_HARDENING["gain_per_unit"],
+    )
 
     b = REFERENCE_BEAM
     burn_range = effective_burn_range(
@@ -269,7 +277,7 @@ def generate_variables(
         b["melt_temp"],
         b["ambient"],
         b["threat_window"],
-    )
+    ).range_m
     focus_melt = melt_time_at_distance(
         b["power"],
         b["waist"],
@@ -283,6 +291,24 @@ def generate_variables(
         b["ambient"],
     )
     z_r = rayleigh_range(b["waist"], b["wavelength"])
+
+    elasticity_low = model["elasticity"] * 0.9
+    elasticity_high = model["elasticity"] * 1.1
+    gain_low = price_gain(
+        model["reference_price"], model["supply_0"], model["fraction_removed"], elasticity_low
+    )
+    gain_high = price_gain(
+        model["reference_price"], model["supply_0"], model["fraction_removed"], elasticity_high
+    )
+    burned_at_double_power = burn_through_time(
+        phys["power"] * 2.0,
+        phys["area"],
+        phys["density"],
+        phys["thickness"],
+        phys["specific_heat"],
+        phys["delta_temperature"],
+        phys["absorptivity"],
+    )
 
     manuscript_date = _manuscript_date(paper)
     version = str(paper.get("version", __version__))
@@ -341,6 +367,9 @@ def generate_variables(
         "VAULT_EFFORT_RAISED": _fmt(hardening["effort_raised"], 2),
         "VAULT_WEAK_PATH_EDGES": str(len(weak_path) - 1),
         "VAULT_CRITICAL_EDGES": str(critical_count),
+        "VAULT_VERIFY_BUDGET": str(verify_budget),
+        "VAULT_VERIFY_OPTIMAL_LIFT": _fmt(verify_optimal_lift, 2),
+        "VAULT_GREEDY_MATCHES_OPTIMAL": ("true" if greedy_matches_optimal else "false"),
         # Laser physics — inputs
         "LASER_POWER_W": _fmt(phys["power"], 0),
         "LASER_SPOT_AREA_M2": f"{phys['area']:.1e}",
@@ -364,6 +393,10 @@ def generate_variables(
         "LASER_EFFECTIVE_RANGE_M": _fmt(burn_range, 1),
         "LASER_FOCUS_MELT_S": _fmt(focus_melt, 4),
         "LASER_RAYLEIGH_RANGE_M": _fmt(z_r, 2),
+        # Sensitivity / uncertainty (live-derived, for the uncertainty section)
+        "MARKET_GAIN_PCT_LOW_ELASTICITY": _fmt(gain_low * 100, 1),
+        "MARKET_GAIN_PCT_HIGH_ELASTICITY": _fmt(gain_high * 100, 1),
+        "LASER_BURN_DOUBLE_POWER_S": _fmt(burned_at_double_power, 3),
         # Environment / reproducibility
         "GOLDFINGER_SEED": str(MISSION_SEED),
     }
@@ -434,6 +467,13 @@ GOLDFINGER_TOKENS: tuple[str, ...] = (
     "VAULT_EFFORT_RAISED",
     "VAULT_WEAK_PATH_EDGES",
     "VAULT_CRITICAL_EDGES",
+    "VAULT_VERIFY_BUDGET",
+    "VAULT_VERIFY_OPTIMAL_LIFT",
+    "VAULT_GREEDY_MATCHES_OPTIMAL",
+    # Sensitivity / uncertainty
+    "MARKET_GAIN_PCT_LOW_ELASTICITY",
+    "MARKET_GAIN_PCT_HIGH_ELASTICITY",
+    "LASER_BURN_DOUBLE_POWER_S",
     # Laser (scalar + thermal)
     "LASER_POWER_W",
     "LASER_SPOT_AREA_M2",
@@ -458,6 +498,47 @@ GOLDFINGER_TOKENS: tuple[str, ...] = (
     "GOLDFINGER_SEED",
     "GOLDFINGER_VERSION_HASH",
 )
+
+
+def _greedy_optimal_verification(
+    graph: dict[str, dict[str, float]],
+    source: str,
+    target: str,
+    gain: float,
+) -> tuple[int, float, bool]:
+    """Measure the greedy hardening allocation against an exhaustive optimum.
+
+    Enumerates every allocation of a small verification budget across the
+    graph's edges and returns ``(verify_budget, optimal_lift,
+    greedy_matches_optimal)``. This turns the V5 "greedy is a lower bound"
+    disclaimer into a measured statement: at the verification budget the
+    exhaustive optimum is computed, and we report whether the greedy
+    allocation achieves it. The result is a pure function of the reference
+    graph, so it is deterministic and reproducible.
+    """
+    budget = 3  # small enough to enumerate, large enough to be meaningful
+    edges = _ordered_edges(graph)
+    best_effort = -1.0
+    for combo in itertools.combinations_with_replacement(edges, budget):
+        trial: dict[str, dict[str, float]] = {n: dict(nbrs) for n, nbrs in graph.items()}
+        tally: dict[tuple[str, str], int] = {}
+        for a, b in combo:
+            key: tuple[str, str] = (a, b) if (a, b) <= (b, a) else (b, a)
+            tally[key] = tally.get(key, 0) + 1
+        total_gain = 0.0
+        for (a, b), units in tally.items():
+            boost = units * gain
+            trial[a][b] += boost
+            trial[b][a] += boost
+            total_gain += boost
+        effort, _ = minimum_effort_path(trial, source, target)
+        best_effort = max(best_effort, effort)
+    base, _ = minimum_effort_path(graph, source, target)
+    optimal_lift = best_effort - base
+    greedy = harden_network(graph, source, target, budget=budget, gain_per_unit=gain)[
+        "min_effort_after"
+    ]
+    return budget, optimal_lift, greedy >= best_effort - 1e-9
 
 
 def render_counts_markdown(

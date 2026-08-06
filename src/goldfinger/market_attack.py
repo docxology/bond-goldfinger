@@ -32,6 +32,7 @@ The module is pure (no I/O), deterministic, and infrastructure-free.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import TypedDict
 
@@ -55,6 +56,8 @@ CONVERGENCE_TOLERANCE: float = 1e-6
 def _positive(value: float, label: str, *, strict: bool = True) -> None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise TypeError(f"{label} must be a number")
+    if not math.isfinite(value):
+        raise ValueError(f"{label} must be finite")
     if value <= 0 if strict else value < 0:
         raise ValueError(f"{label} must be {'positive' if strict else 'non-negative'}")
 

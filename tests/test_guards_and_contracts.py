@@ -136,7 +136,9 @@ def test_effective_burn_range_returns_zero_when_window_is_unreachable() -> None:
         beam["ambient"],
         threat_window=1.0e-12,
     )
-    assert unreachable == 0.0
+    assert unreachable.range_m == 0.0
+    # No distance melts: the focus-only vs never-melts distinction (C2).
+    assert unreachable.burns_at_focus is False
 
 
 # --------------------------------------------------------------------------
@@ -373,6 +375,127 @@ def test_converged_token_and_mission_outcome_agree() -> None:
 
 
 # --------------------------------------------------------------------------
+# Non-finite (NaN / inf) inputs are rejected at the boundary, not propagated
+# --------------------------------------------------------------------------
+
+
+def test_market_attack_rejects_non_finite_supply() -> None:
+    from goldfinger.market_attack import effective_supply
+
+    with pytest.raises(ValueError, match="must be finite"):
+        effective_supply(float("nan"), 0.3)
+    with pytest.raises(ValueError, match="must be finite"):
+        effective_supply(float("inf"), 0.3)
+
+
+def test_market_attack_rejects_non_finite_valuation_quantity() -> None:
+    from goldfinger.market_attack import corner_valuation
+
+    with pytest.raises(ValueError, match="must be finite"):
+        corner_valuation(1000.0, float("nan"))
+
+
+def test_reserve_attack_rejects_non_finite_credit() -> None:
+    from goldfinger.reserve_attack import domestic_credit
+
+    with pytest.raises(ValueError, match="must be finite"):
+        domestic_credit(float("nan"), 0.1, 0.1)
+
+
+def test_vault_network_rejects_non_finite_edge_cost() -> None:
+    from goldfinger.vault_threat_network import minimum_effort_path
+
+    graph = {"a": {"b": float("nan")}, "b": {"a": float("nan")}}
+    with pytest.raises(ValueError, match="must be finite"):
+        minimum_effort_path(graph, "a", "b")  # type: ignore[arg-type]
+
+
+def test_laser_physics_rejects_non_finite_power() -> None:
+    from goldfinger.laser_physics import burn_through_time
+
+    with pytest.raises(ValueError, match="must be finite"):
+        burn_through_time(float("inf"), 1.0e-5, 7800.0, 0.05, 460.0, 1200.0)
+
+
+def test_laser_thermal_rejects_non_finite_distance() -> None:
+    from goldfinger.laser_thermal import spot_radius_at_distance
+
+    with pytest.raises(ValueError, match="must be finite"):
+        spot_radius_at_distance(1.78e-3, 1.064e-6, float("nan"))
+
+
+def test_laser_thermal_rejects_non_finite_positive_bound() -> None:
+    """Drives the ``math.isfinite`` branch of ``_positive`` via a strictly
+    positive parameter (threat window), which the distance validator (which
+    uses ``_non_negative``) does not reach."""
+    from goldfinger.laser_thermal import effective_burn_range
+
+    with pytest.raises(ValueError, match="threat_window must be finite"):
+        effective_burn_range(
+            5000.0,
+            1.78e-3,
+            1.064e-6,
+            0.6,
+            45.0,
+            7800.0,
+            460.0,
+            1500.0,
+            300.0,
+            float("inf"),
+        )
+
+
+def test_vault_security_rejects_non_finite_positive_bound() -> None:
+    """Drives the ``math.isfinite`` branch of vault ``_positive`` via
+    ``per_layer_time`` (strictly positive), which the NaN case does not touch
+    because a rating of NaN is rejected by ``_rating`` first."""
+    from goldfinger.vault_security import expected_breach_time
+
+    with pytest.raises(ValueError, match="must be finite"):
+        expected_breach_time({"perimeter": 0.5}, per_layer_time=float("nan"))
+
+
+# --------------------------------------------------------------------------
+# V4: no count of things outside this package in the manuscript prose
+# --------------------------------------------------------------------------
+
+# A number standing next to a fleet/suite/film/paclage noun is a hand-authored
+# count of something this package cannot derive or gate (a sibling-wide or
+# fleet-wide quantity). The scanner looks for digit-plus-noun constructions
+# over the rendered prose; the fleet size, sibling-package counts, and suite
+# membership are exactly such numbers and must never appear.
+# A count of the fleet or of sibling packages is a hand-authored number this
+# package can neither derive nor gate, so it must never appear in prose. The
+# scanner matches hyphenated count phrases (``27-film``) and plural/collective
+# counts (``33 packages``, ``10 films``), which are the only ways such a count
+# reads. A bare ``1964 film`` (the canonical release year + singular noun) is
+# a film fact, not a fleet count, and is deliberately not matched.
+_FLEET_COUNT_RE = re.compile(
+    r"\b\d+-(?:film|fleet|suite|package|sibling)|"
+    r"\b\d+\s+(?:fleet|suite|packages?|siblings?|films)\b"
+)
+
+
+def test_no_fleet_or_sibling_package_count_in_prose() -> None:
+    prose = _prose_without_tokens()
+    offenders = _FLEET_COUNT_RE.findall(prose)
+    assert not offenders, (
+        f"manuscript prose must not count the fleet or sibling packages; found: {offenders}"
+    )
+
+
+def test_the_fleet_count_gate_can_fail() -> None:
+    """Positive control for V4: a fleet count in prose is caught.
+
+    Both the hyphenated (``27-film``) and spaced (``33 packages``) forms must
+    be flagged; a canonical release year such as ``1964 film`` must not.
+    """
+    for phrase in ("across the 27-film fleet", "like the 33 packages"):
+        assert _FLEET_COUNT_RE.findall(phrase), f"V4 gate did not flag {phrase!r}"
+    assert not _FLEET_COUNT_RE.findall("the 1964 film"), "release year mis-flagged"
+
+
+# --------------------------------------------------------------------------
 # Anti-hardcode gate: no computed result value appears as a prose literal
 # --------------------------------------------------------------------------
 
@@ -465,7 +588,13 @@ _COMPUTED_RESULT_TOKENS = frozenset(
         "VAULT_EFFORT_RAISED",
         "VAULT_WEAK_PATH_EDGES",
         "VAULT_CRITICAL_EDGES",
+        "VAULT_VERIFY_BUDGET",
+        "VAULT_VERIFY_OPTIMAL_LIFT",
+        "VAULT_GREEDY_MATCHES_OPTIMAL",
         "LASER_BURN_THROUGH_S",
+        "MARKET_GAIN_PCT_LOW_ELASTICITY",
+        "MARKET_GAIN_PCT_HIGH_ELASTICITY",
+        "LASER_BURN_DOUBLE_POWER_S",
         "LASER_SEVERITY",
         "LASER_EFFECTIVE_RANGE_M",
         "LASER_FOCUS_MELT_S",
@@ -492,6 +621,8 @@ _UNSCANNABLE_RESULT_TOKENS: dict[str, str] = {
     "VAULT_WEAK_PATH_EDGES": "bare small integer",
     "VAULT_CRITICAL_EDGES": "bare small integer",
     "LASER_SEVERITY": "categorical word",
+    "VAULT_VERIFY_BUDGET": "bare small integer",
+    "VAULT_GREEDY_MATCHES_OPTIMAL": "boolean word",
 }
 
 _NUMERIC_LITERAL = re.compile(r"\d*\.?\d+(?:e[+-]?\d+)?", re.IGNORECASE)
@@ -589,11 +720,26 @@ def test_counts_renderer_refuses_an_incomplete_variable_map() -> None:
         render_counts_markdown(variables)
 
 
-def test_generated_counts_file_matches_a_fresh_render() -> None:
+def _measured_test_count(committed: str) -> int:
+    """Parse the ``**N collected**`` value from the committed COUNTS.md."""
+    for line in committed.splitlines():
+        marker = "collected**"
+        if marker in line:
+            head = line.split("**", 2)[1]
+            return int(head.split()[0])
+    raise AssertionError("committed COUNTS.md has no measured test-count line")
+
+
+def test_generated_counts_file_matches_a_fresh_render(
+    _live_test_count: int,
+) -> None:
     """The committed COUNTS.md must be what the generator produces today.
 
-    Only the derived lines are compared: the measured test/coverage lines
-    legitimately differ between a bare regeneration and a gated one.
+    V2 closure: the measured test-count line is bound to the *live* collection
+    count observed in this very session, instead of being exempted by
+    construction. If a test is added without regenerating COUNTS.md, the
+    committed ``**N collected**`` no longer matches the collection count and
+    this gate goes red — the exact staleness the old gate could not notice.
     """
     counts_path = _PKG_ROOT / "docs" / "_generated" / "COUNTS.md"
     assert counts_path.is_file(), "docs/_generated/COUNTS.md must be committed"
@@ -608,6 +754,29 @@ def test_generated_counts_file_matches_a_fresh_render() -> None:
     assert derived, "expected derived lines to compare"
     stale = [line for line in derived if line not in committed]
     assert not stale, f"docs/_generated/COUNTS.md is stale; regenerate it. Stale lines: {stale}"
+
+    # V2: the committed measured test-count must equal the live collection count.
+    committed_count = _measured_test_count(committed)
+    assert committed_count == _live_test_count, (
+        f"committed COUNTS.md says {committed_count} collected, but this run "
+        f"collects {_live_test_count}. Regenerate with "
+        f"uv run python scripts/z_generate_counts.py --tests {_live_test_count} --coverage <PCT>"
+    )
+
+
+def test_counts_gate_can_detect_a_stale_measured_count() -> None:
+    """Positive control for V2: the measured count line is live-boundable.
+
+    Re-renders the document at two different collection counts and asserts the
+    outputs differ on the measured line — proving the comparison the gate
+    performs is capable of going red, so it is not green by construction.
+    """
+    variables = generate_variables(project_root=_PKG_ROOT)
+    at_100 = render_counts_markdown(variables, tests_collected=100, coverage_percent=99.5)
+    at_101 = render_counts_markdown(variables, tests_collected=101, coverage_percent=99.5)
+    assert at_100 != at_101
+    assert "**100 collected**" in at_100
+    assert "**101 collected**" in at_101
 
 
 def test_the_anti_hardcode_gate_can_actually_fail() -> None:

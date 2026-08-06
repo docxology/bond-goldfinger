@@ -119,13 +119,14 @@ def test_effective_burn_range_is_interior_and_valid() -> None:
         max_distance=100.0,
         step=1.0,
     )
-    assert 0.0 < rng < 100.0
+    assert isinstance(rng.range_m, float) and 0.0 < rng.range_m < 100.0
+    assert rng.burns_at_focus is True  # the reference beam melts at focus
     # At the returned range the melt time is still within the window.
     t_at = melt_time_at_distance(
         B["power"],
         B["waist"],
         B["wavelength"],
-        rng,
+        rng.range_m,
         B["absorptivity"],
         B["conductivity"],
         B["density"],
@@ -139,7 +140,7 @@ def test_effective_burn_range_is_interior_and_valid() -> None:
         B["power"],
         B["waist"],
         B["wavelength"],
-        rng + 1.0,
+        rng.range_m + 1.0,
         B["absorptivity"],
         B["conductivity"],
         B["density"],
@@ -179,6 +180,75 @@ def test_effective_burn_range_invalid() -> None:
         )
 
 
+def test_burn_range_disambiguates_focus_only_from_never_melts() -> None:
+    """C2: a zero range is never ambiguous — the flag carries the meaning.
+
+    A very short window that still lets the *focal* point melt yields
+    ``burns_at_focus`` True (focus-only), while a window too short even for
+    the focus yields False (never melts). A bare float could not express this.
+    """
+    # Focus-only: a window strictly between the focal melt time and the 1 m
+    # melt time — the focal point melts but no positive scan step does, so the
+    # range is 0 yet burns_at_focus is True.
+    focal_melt = melt_time_at_distance(
+        B["power"],
+        B["waist"],
+        B["wavelength"],
+        0.0,
+        B["absorptivity"],
+        B["conductivity"],
+        B["density"],
+        B["specific_heat"],
+        B["melt_temp"],
+        B["ambient"],
+    )
+    at_one = melt_time_at_distance(
+        B["power"],
+        B["waist"],
+        B["wavelength"],
+        1.0,
+        B["absorptivity"],
+        B["conductivity"],
+        B["density"],
+        B["specific_heat"],
+        B["melt_temp"],
+        B["ambient"],
+    )
+    tight_window = (focal_melt + at_one) / 2.0  # between the two melt times
+    focus_only = effective_burn_range(
+        B["power"],
+        B["waist"],
+        B["wavelength"],
+        B["absorptivity"],
+        B["conductivity"],
+        B["density"],
+        B["specific_heat"],
+        B["melt_temp"],
+        B["ambient"],
+        threat_window=tight_window,
+    )
+    assert focus_only.range_m == 0.0
+    assert focus_only.burns_at_focus is True
+
+    # Never-melts: window far shorter than the focal melt time.
+    never = effective_burn_range(
+        B["power"],
+        B["waist"],
+        B["wavelength"],
+        B["absorptivity"],
+        B["conductivity"],
+        B["density"],
+        B["specific_heat"],
+        B["melt_temp"],
+        B["ambient"],
+        threat_window=1.0e-12,
+    )
+    assert never.range_m == 0.0
+    assert never.burns_at_focus is False
+    # The two cases are now distinguishable without a second melt-time call.
+    assert focus_only.burns_at_focus is not never.burns_at_focus
+
+
 def test_reference_deterministic() -> None:
     a = effective_burn_range(
         B["power"],
@@ -204,4 +274,6 @@ def test_reference_deterministic() -> None:
         B["ambient"],
         B["threat_window"],
     )
-    assert a == b
+    assert a == b  # frozen dataclasses compare field-wise
+    assert a.range_m == pytest.approx(65.0, abs=1.0)  # reference effective range
+    assert a.burns_at_focus is True

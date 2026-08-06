@@ -35,6 +35,7 @@ from goldfinger.laser_physics import (
 )
 from goldfinger.laser_thermal import (
     REFERENCE_BEAM,
+    BurnRangeResult,
     effective_burn_range,
     melt_time_at_distance,
     power_density,
@@ -114,6 +115,7 @@ __all__ = [
     "REFERENCE_ATTACK",
     "REFERENCE_BEAM",
     "REFERENCE_GRAPH",
+    "BurnRangeResult",
     "VAULT_NODE_ORDER",
     "__version__",
     "attack_time",

@@ -16,8 +16,10 @@ shape is stable across phases — only the mission *internals* deepen.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
+from bond_api.capabilities import derive_provenance
 from bond_api.protocol import (
     Asset,
     Constraint,
@@ -26,7 +28,6 @@ from bond_api.protocol import (
     MissionBrief,
     MissionOutcome,
     MissionPlan,
-    Provenance,
     ReconReport,
     ReconRequest,
     Step,
@@ -84,6 +85,68 @@ __all__ = ["MissionProvider", "build_provider", "register_market_gadgets"]
 _SEED = MISSION_SEED
 #: Package version baked into provenance.
 _SUBPACKAGE_VERSION = "goldfinger.mission/0.2.0"
+
+
+#: Reference intel actually consumed by :meth:`MissionProvider.execute`, in a
+#: fixed order, so the provenance ``input_hash`` is a real fingerprint of the
+#: inputs rather than a hand-maintained literal. ``derive_provenance`` hashes
+#: these parts (JSON-canonical) into the provenance ``input_hash``.
+_PROVENANCE_INPUT_PARTS: tuple[Any, ...] = (
+    REFERENCE_MODEL,
+    REFERENCE_ATTACK,
+    REFERENCE_RATINGS,
+    REFERENCE_GRAPH,
+    REFERENCE_HARDENING,
+    REFERENCE_TARGET,
+    REFERENCE_PHYSICS,
+    REFERENCE_BEAM,
+)
+
+
+def _provenance_inputs() -> tuple[Any, ...]:
+    """Return the exact reference-intel parts hashed into provenance.
+
+    Every value here is one the six ``_*_intel()`` helpers read in
+    :meth:`MissionProvider.execute`. Two runs with unchanged constants produce
+    the same parts and therefore the same ``input_hash``; editing any one
+    constant changes the hash, so an auditor comparing two provenance records
+    can see at a glance whether the mission's inputs moved.
+    """
+    return _PROVENANCE_INPUT_PARTS
+
+
+def persist_grand_slam_record(
+    outcome: MissionOutcome,
+    path: str | Path,
+) -> Path:
+    """Write a deterministic GRAND SLAM mission record readable by bond-utilities.
+
+    Delegates to ``bond_utilities.mission_io.record_provenance_outcome`` so
+    the outcome survives as a schema-validated, provenance-verified record
+    that the fleet's ``verify_provenance`` / ``load_records`` can read back.
+    Determinism: the input payload is the same reference intel that produced
+    the ``input_hash`` (via :func:`_provenance_inputs`), the seed is the
+    package's fixed mission seed, and ``started_at`` is pinned to a committed
+    value rather than a wall clock — ``record_provenance_outcome``'s default
+    ``started_at`` (``datetime.now``) is never taken, so the persisted record
+    is byte-identical on every run. The concept core never sees this I/O;
+    only this adapter does.
+    """
+    from bond_utilities.mission_io import record_provenance_outcome
+
+    input_payload = {"reference_intel": _provenance_inputs()}
+    record_provenance_outcome(
+        mission_id="goldfinger-grand-slam",
+        seed=outcome.provenance.seed,
+        version=outcome.provenance.package_version,
+        input_payload=input_payload,
+        outcome={"results": outcome.results},
+        path=path,
+        codename="GRAND SLAM",
+        started_at="committed-tree",
+    )
+    return Path(path)
+
 
 #: Gadget registry the mission registers its concept tools into.
 GADGETS: GadgetRegistry = GadgetRegistry()
@@ -203,7 +266,7 @@ def _laser_intel() -> dict[str, Any]:
 def _laser_thermal_intel() -> dict[str, Any]:
     """Compute the deterministic Gaussian-beam / heat-conduction headline numbers."""
     b = REFERENCE_BEAM
-    range_m = effective_burn_range(
+    burn_range = effective_burn_range(
         b["power"],
         b["waist"],
         b["wavelength"],
@@ -215,6 +278,8 @@ def _laser_thermal_intel() -> dict[str, Any]:
         b["ambient"],
         b["threat_window"],
     )
+    range_m = burn_range.range_m
+    burns_at_focus = burn_range.burns_at_focus
     t_focus = melt_time_at_distance(
         b["power"],
         b["waist"],
@@ -229,6 +294,7 @@ def _laser_thermal_intel() -> dict[str, Any]:
     )
     return {
         "effective_burn_range_m": range_m,
+        "burns_at_focus": burns_at_focus,
         "surface_melt_time_at_focus_s": t_focus,
         "threat_window_s": b["threat_window"],
         "waist_mm": b["waist"] * 1000.0,
@@ -366,10 +432,10 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
         return MissionOutcome(
             success=True,
             results=results,
-            provenance=Provenance(
+            provenance=derive_provenance(
                 package_version=_SUBPACKAGE_VERSION,
                 seed=_SEED,
-                input_hash="goldfinger-grand-slam-input-v2",
+                inputs=_provenance_inputs(),
                 wall_time_s=0.0,
             ),
         )

@@ -140,7 +140,7 @@ implements the protocol *structurally* — no inheritance. Discovery in
 | `brief()` | A `MissionBrief` with the codename, the objectives, one `Asset` per concept model (payload = that model's `REFERENCE_*` intel), and determinism/locality `Constraint`s |
 | `recon(request)` | A `ReconReport` of `Finding`s echoing the goal and asserting the model set, determinism, and scope boundary |
 | `plan(brief)` | A `MissionPlan` of `Step`s — one per model plus a synthesis step — each naming the asset it consumes by index into `brief.assets` |
-| `execute(plan)` | Calls the private `_*_intel()` helpers, assembles `results` keyed `corner` / `reserve` / `vault` / `vault_network` / `laser` / `laser_thermal`, and returns a `MissionOutcome` with `Provenance` (package version, seed, input hash, `wall_time_s = 0.0`) |
+| `execute(plan)` | Calls the private `_*_intel()` helpers, assembles `results` keyed `corner` / `reserve` / `vault` / `vault_network` / `laser` / `laser_thermal`, and returns a `MissionOutcome` whose `Provenance` `input_hash` is a real SHA-256 fingerprint of the reference intel consumed (via `bond_api.capabilities.derive_provenance`), not a hand-typed literal — so an audit sees a constant edit in the hash |
 | `debrief(outcome)` | A `Debrief` wrapping the outcome plus the standing lessons |
 
 Two module-level names complete the contract: `GADGETS` (a `GadgetRegistry` the
@@ -148,6 +148,15 @@ mission registers into) and `register_market_gadgets(registry=GADGETS)`, which
 registers the concept callables `market_corner`, `reserve_attack`,
 `vault_defense`, `vault_hardening`, `laser_threat`, and `laser_thermal`. The
 constructor calls the hook, so a discovered provider is ready to use.
+
+`persist_grand_slam_record(outcome, path)` (adapter-only) writes the outcome
+as a schema-validated, provenance-verified mission record via
+`bond-utilities.mission_io.record_provenance_outcome`, for the fleet's
+`verify_provenance` / `load_records` to read back. It is deterministic: the
+input payload is the same reference intel that fed `execute`, and `started_at`
+is pinned to a committed sentinel rather than a wall clock, so the persisted
+record is byte-identical on every run. The concept core never touches this
+I/O — only the adapter does.
 
 ### What is frozen and what may change
 

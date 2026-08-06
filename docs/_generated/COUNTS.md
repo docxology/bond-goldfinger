@@ -5,10 +5,10 @@
 > regenerate instead. Never copy these numbers into other prose — cite this
 > file or use the manuscript `{{TOKEN}}`.
 
-- Test suite: **204 collected**, 0 skipped, 0 failed.
+- Test suite: **220 collected**, 0 skipped, 0 failed.
 - Coverage on `src/goldfinger/` (line + branch): **100.00%** (gate: >=90%).
 - Pure domain modules: **6** (`laser_physics`, `laser_thermal`, `market_attack`, `reserve_attack`, `vault_security`, `vault_threat_network`).
-- Manuscript tokens: **67**.
+- Manuscript tokens: **73**.
 - Figures: **6** (`market_corner_trajectory`, `reserve_crisis`, `vault_layered_score`, `vault_network`, `laser_burn_through`, `laser_engagement`).
 - Deterministic seed: **2026** (no random draws).
 

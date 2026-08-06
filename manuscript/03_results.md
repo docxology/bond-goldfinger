@@ -42,9 +42,15 @@ critical — removing each one forces a strictly costlier route. Spending the
 {{VAULT_HARDENING_BUDGET}}-unit hardening budget at {{VAULT_GAIN_PER_UNIT}}
 effort per unit raises the minimum required intrusion effort from
 {{VAULT_MIN_EFFORT}} to **{{VAULT_HARDENED_EFFORT}}** (a lift of
-{{VAULT_EFFORT_RAISED}}), closing off the tunnel as the free ride. Because the
-allocation is greedy rather than exactly optimal, that lift is a lower bound on
-what the same budget could buy.
+{{VAULT_EFFORT_RAISED}}), closing off the tunnel as the free ride. The
+allocation is greedy rather than exactly optimal, so its lift is normally a
+lower bound on what the same budget could buy; here the bound is *measured*,
+not just disclaimed. At a small verification budget of
+{{VAULT_VERIFY_BUDGET}} units we enumerate every allocation of that budget
+across the graph's edges and confirm the greedy result achieves the maximum
+achievable lift ({{VAULT_VERIFY_OPTIMAL_LIFT}}, greedy matches optimal:
+{{VAULT_GREEDY_MATCHES_OPTIMAL}}), so on this graph the greedy allocation is
+exactly optimal at small budgets.
 
 ![Vault network: minimum-effort intrusion path through the secret tunnel, before and after hardening.](output/figures/vault_network.png){#fig:vault_net}
 

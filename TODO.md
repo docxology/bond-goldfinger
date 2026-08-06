@@ -306,3 +306,128 @@ git status
 Pass the *measured* `<N>` and `<PCT>` from the gated run above — omitting them
 rewrites `docs/_generated/COUNTS.md` to state the gate instead of the
 measurement (see D1).
+
+---
+
+## Round-2 (2026-08-06)
+
+Round-2 executed the pick-up-ready ledger items that still stood open on disk and
+added one hostile-review hardening class. Verified state after this round:
+**220 tests passed, 0 skipped, 0 failed; 100.00% line *and* branch coverage on
+`src/goldfinger/`** (`uv run pytest tests/ --cov=src --cov-fail-under=90`);
+`ruff check`, `ruff format --check`, and `mypy src/goldfinger scripts` all
+clean; zero exemplar-lineage hits. (Do not restate those numbers elsewhere; cite
+`docs/_generated/COUNTS.md`.)
+
+### Resolved this round
+
+- **C1 — `input_hash` is now a real fingerprint of the reference intel.**
+  `mission.py` previously hardcoded `input_hash="goldfinger-grand-slam-input-v2"`.
+  It now builds provenance through `bond_api.capabilities.derive_provenance`
+  over the exact `REFERENCE_*` intel the `_*_intel()` helpers consume
+  (`_provenance_inputs()`), so a one-value edit to any constant changes the
+  hash and two runs with unchanged constants agree. The frozen surface (module
+  path, class, `film`, five methods, `GADGETS`, hooks, `build_provider`) is
+  untouched.
+  *Tests:* `test_input_hash_is_sensitive_to_any_constant_edit` (positive
+  control: perturb one constant, hash differs) and the strengthened
+  `test_deterministic_provenance` in `tests/test_protocol_integration.py`.
+
+- **C2 — `effective_burn_range` no longer returns a two-valued `0.0`.** The
+  focus-only vs never-melts ambiguity (both read as a bare zero) is resolved:
+  the function now returns a frozen `BurnRangeResult` carrying `burns_at_focus`
+  alongside `range_m`. Both call sites (mission adapter, manuscript token map)
+  read the explicit flag, so no caller needs a second melt-time call to
+  interpret a `0.0` range.
+  *Tests:* `test_burn_range_disambiguates_focus_only_from_never_melts` and the
+  strengthened `test_effective_burn_range_is_interior_and_valid` / the
+  never-melts guard in `tests/test_laser_thermal.py` and
+  `tests/test_guards_and_contracts.py`.
+
+  **Note:** E1 (bisection replacing the grid scan) was **not** executed as a
+  separate step — the reference answer is a bounded monotone range already
+  reproduced within the scan step, and the round prioritised the two-valued
+  ambiguity (C2) which is the actual defect. The grid-scan quantisation record
+  in this file's E1 entry stands as a limitation.
+
+- **V2 — COUNTS.md measured lines are now gated, not exempt by construction.**
+  The staleness test previously compared only the derived lines and skipped the
+  measured `**N collected**` line. It now binds that line to the *live*
+  collection count via a session-scoped `_live_test_count` fixture, so adding a
+  test without regenerating COUNTS.md turns the gate red.
+  *Tests:* `test_generated_counts_file_matches_a_fresh_render` (now live-bound)
+  and `test_counts_gate_can_detect_a_stale_measured_count` (positive control).
+
+- **V4 — a fleet/sibling-package count in the prose is now caught by a gate.**
+  `tests/test_guards_and_contracts.py` regex-rejects digit bound to a
+  fleet/suite/package/sibling noun (e.g. `27-film`, `33 packages`) in the
+  rendered prose, with a positive control pasting one back and seeing it
+  caught. The prose and `manuscript/06_reproducibility.md` were hardened so a
+  release year like `1964 film` is the *only* digit-plus-noun construction —
+  deliberately not a fleet count.
+
+- **V5 — the hardening "lower bound" is now measured, not merely disclaimed.**
+  `tests/test_vault_threat_network.py` adds an exhaustive enumeration over the
+  reference graph at a small budget (`VAULT_VERIFY_BUDGET` = 3) showing the
+  greedy allocation achieves the optimal lift (`VAULT_VERIFY_OPTIMAL_LIFT`,
+  `VAULT_GREEDY_MATCHES_OPTIMAL`). Those values are computed by the pure core
+  and injected as manuscript tokens, and `manuscript/03_results.md` and
+  `manuscript/07_scope_and_related_work.md` now state the measured result.
+
+- **D1/D2 — doc call sites and the stale docstring.**
+  `README.md` and `docs/AGENTS.md` bare `z_generate_counts.py` invocations now
+  carry the `--tests <N> --coverage <PCT>` form with a warning that the bare
+  form drops the measured lines; `scripts/z_generate_counts.py`'s docstring
+  example `--tests 151` was replaced with `<N>` placeholders. `rg -n
+  "tests 1[0-9][0-9]" scripts/` returns nothing.
+
+- **E3 — deterministic provenance persistence via bond-utilities.**
+  `mission.py` now exposes `persist_grand_slam_record(outcome, path)`, which
+  writes the outcome through `bond_utilities.mission_io.record_provenance_outcome`
+  with a pinned, committed `started_at` (never the wall clock) and the same
+  reference intel that produced the `input_hash`. `scripts/execute.py` writes
+  it to `output/data/grand_slam_record.json`, and a test round-trips it through
+  `bond_utilities.mission_io.verify_provenance` and asserts byte-determinism.
+  `pyproject.toml` now declares the `bond-utilities` path dependency; the
+  concept core still imports without it (`bond_utilities` is imported lazily in
+  the adapter only).
+
+### New finding, fixed and tested
+
+- **Non-finite (NaN / inf) inputs were silently accepted by every module's
+  `_positive` validator.** Because `value <= 0` is `False` for `NaN` and
+  `+inf`, a NaN (or infinity) passed the "positive" guard and propagated
+  through the computation into a NaN result. Every `_positive` /
+  `_non_negative` / `_require_edge_cost` validator now rejects non-finite
+  values with `math.isfinite`, so a NaN or `inf` input raises `ValueError` at
+  the boundary instead of silently poisoning the output. This is exactly the
+  "looks fine but is wrong at the edges" class this round was asked to hunt.
+  *Tests:* six negative-control tests drive NaN/inf through
+  `market_attack`, `reserve_attack`, `vault_threat_network`, `laser_physics`,
+  and `laser_thermal` and assert the finite guard fires.
+
+### Manuscript
+
+- New `manuscript/08_uncertainty.md` — an honest limitation/uncertainty
+  section bound entirely to live engine output: elasticity sensitivity of the
+  corner gain, the `1/P` lever of burn-through, and the measured
+  greedy-vs-optimal vault hardening gap. New derived tokens
+  (`MARKET_GAIN_PCT_LOW_ELASTICITY`, `MARKET_GAIN_PCT_HIGH_ELASTICITY`,
+  `LASER_BURN_DOUBLE_POWER_S`, `VAULT_VERIFY_*`) are computed in
+  `manuscript_variables.py`, never hand-typed.
+- `manuscript/03_results.md` and `07_scope_and_related_work.md` now state the
+  measured hardening guarantee instead of a bare disclaimer;
+  `manuscript/06_reproducibility.md` documents the new V4 fleet-count gate.
+
+### Left for a future round
+
+- **E1** (bisection for `effective_burn_range`) remains pending: the
+  two-valued ambiguity (C2) is fixed, but the fixed-step scan still quantises
+  the result. Low priority — the reference answer is stable within the step.
+- **E2** (second-generation / Obstfeld currency-crisis variant) was not added;
+  still out of scope until the mission needs the self-fulfilling case.
+- **V3** (the 11 unscannable result tokens) stands as documented: exact-value
+  substring policing of bare small integers and category words yields false
+  positives, not detections. This round's V4 gate closes the *fleet-count*
+  slice of that hole; the general case remains in Known limitations with the
+  enumeration kept honest by `test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects`.
