@@ -33,9 +33,11 @@ dev = [
 
 # Local path dependency so the FROZEN bond-api protocol is importable.
 # bond-api is Layer 1 (THE PROTOCOL); every film package codes against it.
+# Relative paths (fleet convention, see ../bond-cli): the BOND packages are
+# checked out as siblings, so this resolves on any machine.
 [tool.uv.sources]
-bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
-bond-utilities = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-utilities" }
+bond-api = { path = "../bond-api" }
+bond-utilities = { path = "../bond-utilities" }
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]

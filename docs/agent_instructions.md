@@ -7,8 +7,8 @@ Read this before modifying anything. Background is in
 ## Orientation (do this first)
 
 ```bash
-cd projects/working/bond/goldfinger
-uv sync --extra dev                 # installs deps incl. the bond-api path dependency
+cd <this package root>              # the checkout that holds pyproject.toml
+uv sync --extra dev                 # installs deps; bond-api/bond-utilities resolve from sibling checkouts
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run python scripts/execute.py    # see all six models produce real numbers
 cat docs/_generated/COUNTS.md       # current structural counts and headlines
@@ -112,5 +112,7 @@ git status
 - Formatting a small probability with too few digits silently rounds it to
   `0.0`. Sequential vault penetration is ~0.009%; check the rendered token, not
   just the float.
-- `effective_burn_range` returns `0.0` both for "melts only at focus" and "never
-  melts in the window". Disambiguate with `melt_time_at_distance(..., 0.0)`.
+- `effective_burn_range` returns a `BurnRangeResult`, not a bare float: a zero
+  `range_m` means either "melts only at focus" or "never melts in the window",
+  and the companion `burns_at_focus` flag is what distinguishes them. Read the
+  flag instead of re-running `melt_time_at_distance(..., 0.0)`.

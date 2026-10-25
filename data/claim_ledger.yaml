@@ -14,6 +14,6 @@ claims:
     source: "goldfinger.vault_security.layered_security_score / penetration_probability"
     token: "VAULT_SCORE / VAULT_PENETRATION_PCT"
   - id: "laser_burn_through"
-    claim: "a 5000 W beam with 0.6 absorptivity burns a 50 mm steel plate in ~0.98 s"
+    claim: "a 5000 W beam with 0.6 absorptivity burns a 50 mm steel plate in ~0.72 s"
     source: "goldfinger.laser_physics.burn_through_time(REFERENCE_PHYSICS)"
     token: "LASER_BURN_THROUGH_S"

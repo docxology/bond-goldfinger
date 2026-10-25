@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -52,7 +52,7 @@ wheels = [
 [[package]]
 name = "bond-api"
 version = "0.1.0"
-source = { directory = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
+source = { directory = "../bond-api" }
 dependencies = [
     { name = "pyyaml" },
 ]
@@ -71,7 +71,7 @@ provides-extras = ["dev"]
 [[package]]
 name = "bond-utilities"
 version = "0.3.0"
-source = { directory = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-utilities" }
+source = { directory = "../bond-utilities" }
 dependencies = [
     { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "matplotlib", version = "3.11.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -465,8 +465,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bond-api", directory = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" },
-    { name = "bond-utilities", directory = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-utilities" },
+    { name = "bond-api", directory = "../bond-api" },
+    { name = "bond-utilities", directory = "../bond-utilities" },
     { name = "matplotlib", specifier = ">=3.7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10.0" },
     { name = "numpy", specifier = ">=1.24.0" },
