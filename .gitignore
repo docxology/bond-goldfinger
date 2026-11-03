@@ -17,3 +17,6 @@ dist/
 
 # Regenerable output artifacts (writes under output/ leave the tree clean)
 output/
+
+# Build output the vendored copies' own builds write into vendor/.
+vendor/**/build/

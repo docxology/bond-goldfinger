@@ -34,11 +34,12 @@ dev = [
 
 # Local path dependency so the FROZEN bond-api protocol is importable.
 # bond-api is Layer 1 (THE PROTOCOL); every film package codes against it.
-# Relative paths (fleet convention, see ../bond-cli): the BOND packages are
-# checked out as siblings, so this resolves on any machine.
+# The BOND packages travel in-tree under vendor/ with recorded provenance
+# (vendor/bond-api/VENDOR.md, vendor/bond-utilities/VENDOR.md), so this
+# resolves in any clone.
 [tool.uv.sources]
-bond-api = { path = "../bond-api" }
-bond-utilities = { path = "../bond-utilities" }
+bond-api = { path = "vendor/bond-api" }
+bond-utilities = { path = "vendor/bond-utilities" }
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
@@ -67,6 +68,8 @@ exclude_lines = [
 ]
 
 [tool.mypy]
+# Vendored copies are a dependency; their bytes are bound by scripts/vendor.py.
+exclude = ["(^|/)vendor/"]
 mypy_path = ["src"]
 explicit_package_bases = true
 warn_return_any = true
@@ -82,6 +85,8 @@ module = "bond_utilities.*"
 ignore_missing_imports = true
 
 [tool.ruff]
+# The vendored copies are byte-identical to upstream and must stay that way.
+extend-exclude = ["vendor"]
 line-length = 100
 target-version = "py310"
 

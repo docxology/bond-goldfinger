@@ -82,8 +82,8 @@ covered without anyone remembering to add it.
 - Python: as resolved by `uv` (the package requires `>=3.10`)
 - Dependencies: NumPy, Matplotlib, PyYAML, and the frozen `bond-api` protocol
   plus `bond-utilities` (local path dependencies declared in `pyproject.toml`
-  under `[tool.uv.sources]`; both are checked out as siblings, `../bond-api`
-  and `../bond-utilities`)
+  under `[tool.uv.sources]`; both travel in-tree as vendored copies under
+  `vendor/bond-api` and `vendor/bond-utilities`)
 - Dev: pytest, pytest-cov, mypy, ruff, types-PyYAML
 
 ## Mission adapter
