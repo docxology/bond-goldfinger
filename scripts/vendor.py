@@ -192,9 +192,11 @@ def check_one(manifest: Manifest) -> list[str]:
             findings.append(f"{name}: recorded, missing on disk")
         elif sha256(path) != digest:
             findings.append(f"{name}: differs from the recorded copy")
-    for name in manifest.module_tree():
-        if name not in manifest.sha256:
-            findings.append(f"{name}: not part of the recorded copy")
+    findings.extend(
+        f"{name}: not part of the recorded copy"
+        for name in manifest.module_tree()
+        if name not in manifest.sha256
+    )
     if manifest.aggregate_sha256 != aggregate(manifest.sha256):
         findings.append("PROVENANCE.json: the aggregate hash disagrees with the per-file hashes")
     note = manifest.directory / VENDOR_NOTE
