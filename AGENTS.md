@@ -11,7 +11,11 @@ Structure: [`docs/architecture.md`](docs/architecture.md). Test doctrine:
 
 - Film: Goldfinger (1964) · mission codename GRAND SLAM
 - Package: `goldfinger` · BOND-API slug: `goldfinger`
-- Local-only tree: no remote, never push; path-scoped commits only.
+- Published tree: `origin` is the GitHub repository (`docxology/bond-goldfinger`).
+  Land a change through an ordinary branch, pull request and merge — never a
+  force-push or a history rewrite — and a pull request touches this package's
+  paths only: never a sibling BOND package, the bond root files, or the template
+  repo.
 
 ## Build, test, verify
 

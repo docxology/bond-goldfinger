@@ -116,4 +116,5 @@ figures live in [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md), which
 is generated — they are deliberately not restated here, because a number typed
 into a README rots the next time someone adds a test.
 
-Local-only working tree — there is no remote and this package is never pushed.
+Published working tree — `origin` is `docxology/bond-goldfinger`; changes land through an ordinary
+branch, pull request and merge, never a force-push or a history rewrite.

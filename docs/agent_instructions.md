@@ -23,8 +23,10 @@ stalling.
 
 - **Scope**: work only inside this package directory. Never touch a sibling
   BOND package, the bond root files, or the template repo.
-- **Local-only**: there is no remote. Never push. Commit path-scoped inside this
-  repository only.
+- **Published tree**: `origin` is the GitHub repository
+  (`docxology/bond-goldfinger`). Land a change through an ordinary branch, pull
+  request and merge — never a force-push or a history rewrite — and commit this
+  package's paths only.
 - **Never change the frozen protocol surface.** `goldfinger.mission` must keep
   exporting `MissionProvider` (with `film = "goldfinger"` and the five lifecycle
   methods), the module-level `GADGETS` registry, `register_market_gadgets`, and
