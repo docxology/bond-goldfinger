@@ -95,11 +95,13 @@ def test_author_orcid_is_consistent(source: str, orcid: str) -> None:
 
 
 def test_publisher_metadata_declares_no_fabricated_identifiers() -> None:
-    """Local-only tree: a DOI or repository URL here would be invented."""
+    """The declared repository is the real one; no DOI is declared anywhere."""
     zenodo = _json(".zenodo.json")
     codemeta = _json("codemeta.json")
-    assert "doi" not in zenodo, "no DOI may be declared for a local-only package"
-    assert codemeta.get("codeRepository") is None, "there is no remote to point at"
+    assert "doi" not in zenodo, "no DOI may be declared before a deposit exists"
+    assert codemeta.get("codeRepository") == "https://github.com/docxology/bond-goldfinger", (
+        "codemeta.json must name the repository this package is pushed to"
+    )
     config = _manuscript_config()
     publication = config.get("publication")
     assert isinstance(publication, dict)

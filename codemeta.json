@@ -4,7 +4,7 @@
   "name": "goldfinger",
   "identifier": "goldfinger",
   "description": "PROJECT BOND film package modelling Goldfinger (1964) as six deterministic, fully-tested scientific modules across three attack surfaces \u2014 gold-market cornering and a first-generation speculative attack on the gold peg; layered and network vault defense; scalar and thermal laser threat physics \u2014 exposed via the frozen BOND-API MissionProvider protocol.",
-  "codeRepository": null,
+  "codeRepository": "https://github.com/docxology/bond-goldfinger",
   "license": "https://spdx.org/licenses/MIT",
   "version": "0.2.0",
   "programmingLanguage": "Python",

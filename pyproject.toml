@@ -1,5 +1,6 @@
 # PROJECT BOND — goldfinger (Goldfinger, 1964) · mission codename GRAND SLAM
-# Local-only working tree. Never push. Path-scoped commits only.
+# Tracked at github.com/docxology/bond-goldfinger (origin, branch main);
+# path-scoped commits only.
 
 [build-system]
 requires = ["setuptools>=61.0"]

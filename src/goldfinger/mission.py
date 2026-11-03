@@ -354,7 +354,10 @@ class MissionProvider:  # noqa: N801 — class name fixed by the discovery contr
             ),
             constraints=(
                 Constraint(kind="determinism", detail="no random draws, no external calls"),
-                Constraint(kind="location", detail="local-only working tree; no remote"),
+                Constraint(
+                    kind="location",
+                    detail="path-scoped commits inside github.com/docxology/bond-goldfinger",
+                ),
             ),
         )
 

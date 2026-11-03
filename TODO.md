@@ -11,7 +11,8 @@ the run that removed the wall clock from the token map and added
 0 failed; 100.00% line *and* branch coverage on `src/goldfinger/`** measured by
 `uv run pytest tests/ --cov=src --cov-fail-under=90`; `ruff check`, `ruff format
 --check`, and `mypy src/goldfinger scripts` all clean; zero exemplar-lineage
-hits. Local-only tree — no remote, never pushed.
+hits. Tracked at `github.com/docxology/bond-goldfinger` (`origin`, branch
+`main`); the suite copy under `projects/working/bond/` has no remote of its own.
 
 Do not restate a measured figure in this file; cite
 [`docs/_generated/COUNTS.md`](docs/_generated/COUNTS.md). The paragraph above is
@@ -235,12 +236,13 @@ record, and `uv run pytest tests/test_mission.py -v` stays green.
 
 ## Known limitations (not bugs)
 
-- **Publisher metadata carries no DOI and no repository URL.** `CITATION.cff`,
-  `.zenodo.json` (`codeRepository: null` in `codemeta.json`) deliberately omit
-  them: this is a local-only tree with no remote, and a fabricated DOI is worse
-  than none. `tests/test_package_metadata.py` asserts their *absence*, so this is
-  an enforced decision rather than an unfinished field. Populate real values only
-  if a publication target is authorised.
+- **Publisher metadata carries no DOI.** `CITATION.cff` and `.zenodo.json`
+  declare none, because no DOI has been minted and no deposit exists: a
+  fabricated DOI is worse than none. `codemeta.json` names the repository the
+  package is actually pushed to (`github.com/docxology/bond-goldfinger`).
+  `tests/test_package_metadata.py` asserts both facts — the declared repository
+  is the real one, and no DOI is declared anywhere — so neither is an unfinished
+  field. Populate a DOI only if a deposit is actually made.
 - **`manuscript/config.yaml`'s `grand_slam:` block is a mirror, not a source.**
   No code path loads it; the module `REFERENCE_*` constants are the source of
   truth. The audit found this block described as "the single source of truth from
@@ -270,8 +272,8 @@ record, and `uv run pytest tests/test_mission.py -v` stays green.
 - **The mission records `wall_time_s=0.0`.** Deliberate: no wall-clock value may
   enter a persisted result, because it would make the outcome non-reproducible.
   Determinism beats instrumentation here.
-- **Scope is exactly this directory.** No remote push, no sibling-package edits,
-  no template-repo edits. The `mission.py` public surface and the `GADGETS`
+- **Scope is exactly this directory.** Commits stay inside this repository; no
+  sibling-package edits, no template-repo edits. The `mission.py` public surface and the `GADGETS`
   convention are frozen — the fleet consumes them (`AGENTS.md:56-64`).
 
 ## Verification

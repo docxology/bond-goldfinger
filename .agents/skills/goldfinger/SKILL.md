@@ -6,7 +6,8 @@ description: Build/maintain the goldfinger (GRAND SLAM) PROJECT BOND film packag
 # goldfinger — GRAND SLAM
 
 PROJECT BOND film package for Goldfinger (1964). Scope = this directory only,
-local-only (no remote), path-scoped commits.
+tracked at github.com/docxology/bond-goldfinger (origin, branch main),
+path-scoped commits.
 
 ## Concepts
 
