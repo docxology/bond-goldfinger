@@ -21,7 +21,7 @@ Structure: [`docs/architecture.md`](docs/architecture.md). Test doctrine:
 
 ```bash
 cd <this package root>       # the checkout that holds pyproject.toml
-uv sync --extra dev          # deps incl. the sibling bond-api/bond-utilities path deps — run before pytest
+uv sync --extra dev          # deps incl. the vendored bond-api/bond-utilities copies — run before pytest
 
 # The gate. Read the output, not just the exit code.
 uv run pytest tests/ --cov=src --cov-fail-under=90

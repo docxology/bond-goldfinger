@@ -8,16 +8,16 @@ Read this before modifying anything. Background is in
 
 ```bash
 cd <this package root>              # the checkout that holds pyproject.toml
-uv sync --extra dev                 # installs deps; bond-api/bond-utilities resolve from sibling checkouts
+uv sync --extra dev                 # installs deps; bond-api/bond-utilities come from the vendored copies
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run python scripts/execute.py    # see all six models produce real numbers
 cat docs/_generated/COUNTS.md       # current structural counts and headlines
 ```
 
-If `uv sync` cannot resolve `bond-api`, the six concept modules still import
-standalone — only `mission.py` and the phase CLIs need the protocol. Build
-against the pure core and note the blocked integration in `TODO.md` rather than
-stalling.
+If the vendored `bond-api` copy is unavailable, the six concept modules still
+import standalone — only `mission.py` and the phase CLIs need the protocol.
+Build against the pure core and note the blocked integration in `TODO.md`
+rather than stalling.
 
 ## Hard boundaries
 
