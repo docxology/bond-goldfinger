@@ -1,5 +1,6 @@
 # PROJECT BOND — goldfinger (Goldfinger, 1964) · mission codename GRAND SLAM
-# Special-Agent Mission Software. Local-only working tree; never push.
+# Special-Agent Mission Software. Tracked at github.com/docxology/bond-goldfinger
+# (origin, branch main); path-scoped commits only.
 # Loaded by src/goldfinger/manuscript_variables.py::load_mission_config and by
 # scripts/z_generate_manuscript_variables.py. All result metrics in the prose
 # are injected as {{TOKEN}}s, never hand-authored.
@@ -19,8 +20,9 @@ authors:
     affiliation: "Active Inference Institute"
     corresponding: true
 
-# Local-only tree: no remote. Publication metadata is prose-grade and omits
-# fabricated DOI / repository / host artifact URLs.
+# No DOI has been minted and no deposit exists, so none is declared here; the
+# repository is named in codemeta.json and pyproject.toml. No fabricated DOI or
+# host artifact URL appears in the manuscript.
 publication:
   journal: "BOND Suite Mission Report"
   year: "2026"
