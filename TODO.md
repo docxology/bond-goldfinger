@@ -433,3 +433,7 @@ clean; zero exemplar-lineage hits. (Do not restate those numbers elsewhere; cite
   positives, not detections. This round's V4 gate closes the *fleet-count*
   slice of that hole; the general case remains in Known limitations with the
   enumeration kept honest by `test_unscannable_tokens_are_exactly_the_ones_the_rule_rejects`.
+
+## Workflowz review — 2026-11-10
+
+No new actionable finding survives this bounded read-only review. Coverage: the root directives, README, existing TODO, the `.python-version` and `pyproject.toml` runtime/dependency declarations, package and figure exports, and the supplied excerpts of `laser_physics.py`, `vault_security.py`, and `reserve_attack.py`. The visible `_positive`/`_absorptivity`/`_rating` helpers and default mappings are input validation and reference data, not production mock/fallback substitutes; no keyword-only finding is proposed. The existing TODO already records open correctness, verification, and documentation work, but its cited mission, thermal, guard-test, and generated-count lines were not supplied here, so those items were not duplicated or treated as newly verified. The checked-in interpreter remains `3.14` while `requires-python` is `>=3.11`; no visible dependency or deployment constraint establishes a 3.15.2 migration, so no blind runtime task is added. Re-review on a concrete failure or a source change in the inspected modules/configuration; source excerpts outside this packet remain unreviewed.
