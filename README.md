@@ -6,6 +6,30 @@ A PROJECT BOND film package that models the film's operational concepts as
 small, deterministic, fully-tested scientific modules — across three attack
 surfaces — then exposes them as a protocol-compliant BOND-API mission.
 
+## Mission model
+
+```mermaid
+flowchart TD
+    accTitle: Goldfinger implemented mission analyses
+    accDescr: Bullion supply and reserve parameters, Fort Knox defence zones and Gaussian laser beam geometry feed Constant-elasticity bullion supply shock and Flood-Garber speculative reserve drain; Weighted defence-in-depth penetration scoring and Dijkstra vault intrusion routing; Energy-balance column burn-through and Rayleigh-range Gaussian thermal cutting. The mission adapter returns clearing-price shock, reserve collapse time, vault breach path and cut rate with provenance, then a debrief.
+    I["Bullion supply/reserve parameters, Fort Knox defence zones and Gaussian laser beam geometry"]
+    G0["Constant-elasticity bullion supply shock and Flood-Garber speculative reserve drain"]
+    I --> G0
+    G1["Weighted defence-in-depth penetration scoring and Dijkstra vault intrusion routing"]
+    I --> G1
+    G2["Energy-balance column burn-through and Rayleigh-range Gaussian thermal cutting"]
+    I --> G2
+    O["mission.py: execute returns MissionOutcome<br/>Clearing-price shock, reserve collapse time, vault breach path, cut rate and provenance"]
+    G0 --> O
+    G1 --> O
+    G2 --> O
+    O --> F["debrief: mission summary"]
+```
+
+The branches group implemented capabilities; they do not imply a runtime order.
+
+**Source map:** [`market_attack.py`](src/goldfinger/market_attack.py), [`reserve_attack.py`](src/goldfinger/reserve_attack.py); [`vault_security.py`](src/goldfinger/vault_security.py), [`vault_threat_network.py`](src/goldfinger/vault_threat_network.py); [`laser_physics.py`](src/goldfinger/laser_physics.py), [`laser_thermal.py`](src/goldfinger/laser_thermal.py); [`mission.py`](src/goldfinger/mission.py).
+
 ## The film, mapped to software
 
 Auric Goldfinger's scheme is treated as a *quantitative modelling exercise*.
