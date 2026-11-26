@@ -1,5 +1,7 @@
 # docs — goldfinger (GRAND SLAM)
 
+[Package maintenance](package-maintenance.md) covers dependency and release records.
+
 Agent-facing and maintenance documentation for the **goldfinger** film package
 of PROJECT BOND: the GRAND SLAM mission software modelling *Goldfinger* (1964)
 as six deterministic concept modules behind a frozen BOND-API mission adapter.
