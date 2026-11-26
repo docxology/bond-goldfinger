@@ -1,5 +1,7 @@
 # docs/ — agent directives for the goldfinger documentation set
 
+[Package maintenance](package-maintenance.md) identifies the dependency and citation records.
+
 Scope of this file: how an agent should work on **documentation** inside this
 package. For code directives see [`../AGENTS.md`](../AGENTS.md); for the
 operational checklist see [`agent_instructions.md`](agent_instructions.md); for

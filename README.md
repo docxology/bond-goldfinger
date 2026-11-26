@@ -1,5 +1,7 @@
 # goldfinger — Special-Agent Mission Software (GRAND SLAM)
 
+See [package maintenance](docs/package-maintenance.md) for dependency and citation records.
+
 Film: **Goldfinger** (1964) · Mission codename: **GRAND SLAM**
 
 A PROJECT BOND film package that models the film's operational concepts as
