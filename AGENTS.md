@@ -1,5 +1,8 @@
 # goldfinger — agent directives (GRAND SLAM)
 
+The [package maintenance guide](docs/package-maintenance.md) records the
+distribution identity, Python selection, dependency provenance, and citation metadata.
+
 Film package in the PROJECT BOND suite. Scope is **exactly this directory** —
 never touch sibling packages, bond root files, or the template repo.
 
